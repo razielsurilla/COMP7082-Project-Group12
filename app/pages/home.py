@@ -39,6 +39,26 @@ class Calendar:
                     with ui.card().classes(f'w-20 h-20 flex items-center justify-center {bg}'):
                         ui.label(str(day.day))
 
+    def prev_month(self):
+        # wraparound jan -> dec
+        if self.state["month"] == 1:
+            self.state["month"] = 12
+            self.state["year"] -= 1
+        else:
+            self.state["month"] -= 1
+        self.calendar_label.set_text(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}')
+        self.render_calendar()  # redraw for prev month
+
+    def next_month(self):
+        # wraparound dec -> jan
+        if self.state["month"] == 12:
+            self.state["month"] = 1
+            self.state["year"] += 1
+        else:
+            self.state["month"] += 1
+        self.calendar_label.set_text(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}')
+        self.render_calendar()  # redraw for next month
+
     def show(self):
         # this is so everything is centered
         with ui.column().classes('justify-center items-center w-full'):    
@@ -46,7 +66,10 @@ class Calendar:
             self.calendar_label = ui.label(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}') \
                                  .classes('text-3xl font-bold mb-4 justify-center text-center')
 
+            # row here, so the arrows are on the same row as the calendar
             with ui.row().classes('items-center justify-center gap-4'):
+                ui.button('<', on_click=self.prev_month).classes('w-10 h-10 self-center')
                 self.calendar_container = ui.column().classes('items-center')
+                ui.button('>', on_click=self.next_month).classes('w-10 h-10 self-center')
 
             self.render_calendar()
