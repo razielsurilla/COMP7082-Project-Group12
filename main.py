@@ -2,8 +2,10 @@ from nicegui import ui
 from app.layout import with_sidebar
 from app.pages import home
 
-@ui.page('/') # route the page will display on
+calendar_ui = home.Calendar()
+
+@ui.page('/')
 def home_page():
-    with_sidebar(home.show)
+    with_sidebar(calendar_ui.show)
 
 ui.run()
