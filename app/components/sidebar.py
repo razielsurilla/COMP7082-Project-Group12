@@ -7,8 +7,8 @@ def sidebar():
         with ui.link(target='/', new_tab=False).classes('no-underline'):
             ui.icon('calendar_month').classes('text-5xl text-gray-700 hover:text-blue-500')
 
-        with ui.link(target='/', new_tab=False).classes('no-underline'):
+        with ui.link(target='/events', new_tab=False).classes('no-underline'):
             ui.icon('menu').classes('text-5xl text-gray-700 hover:text-blue-500')
 
-        with ui.link(target='/', new_tab=False).classes('no-underline'):
+        with ui.link(target='/upload', new_tab=False).classes('no-underline'):
             ui.icon('photo_camera').classes('text-5xl text-gray-700 hover:text-blue-500')
