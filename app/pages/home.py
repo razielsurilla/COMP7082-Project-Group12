@@ -27,7 +27,8 @@ class Calendar:
             with ui.grid(columns=7).classes('gap-2 justify-center'):
                 for weekday in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']:
                     ui.label(weekday).classes('text-md font-bold text-center')
-                
+                    #TODO: Make Sat/Sun Red
+                    #TODO: Make Buttons
                 for day in days:
                     is_current = day.month == self.state["month"]
                     is_today = day == self.today
@@ -65,6 +66,7 @@ class Calendar:
             # month label on top
             self.calendar_label = ui.label(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}') \
                                  .classes('text-3xl font-bold mb-4 justify-center text-center')
+            # TODO: Make these dropdown menus with on_change events (set state, set text, render_calendar)
 
             # row here, so the arrows are on the same row as the calendar
             with ui.row().classes('items-center justify-center gap-4'):
