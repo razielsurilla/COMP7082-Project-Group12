@@ -2,6 +2,7 @@ from nicegui import ui
 from app.layout import with_sidebar
 from app.pages import home
 from dbmodule.sql import Sql
+from dbmodule.calendardata import CalendarData
 
 calendar_ui = home.Calendar()
 sqlInstance = None
@@ -27,14 +28,22 @@ def assistant_page():
 	with_sidebar(None)
 
 def initModules():
+	global sqlInstance
 	sqlInstance = Sql()
+	calendarData = CalendarData(sqlInstance)
+	calendarData.buildData()
+	calendarData.addData(None, None, None)
+	calendarData.updateDescription(None, None)
+	calendarData.updateDetail(None, None);
+	calendarData.updateDate(None, None);
 	return None
 
 def terminateModules():
-	#sqlInstance.terminate()
+	global sqlInstance
+	sqlInstance.terminate()
 	return None
 
 if __name__ in {"__main__", "__mp_main__"}:
 	initModules()
 	ui.run()
-	#terminateModules()
+	terminateModules()

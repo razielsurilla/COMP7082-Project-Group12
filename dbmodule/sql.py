@@ -1,17 +1,17 @@
 import sqlite3 as sql
 import os
+from enum import Enum
 
-DATABASE_PATH = "../data/"
+DATABASE_PATH = "data/"
 DATABASE_FILE = "followup.db"
 
 class Sql:
 	def __init__(self):
-		absPath = os.path.realpath(__file__)
-		#relPath = os.path.
-		print(absPath)
-		#self.conn = sql.connect(absPath)
-		#self.cursor = self.conn.cursor()
+		relPath = os.path.abspath(DATABASE_PATH+DATABASE_FILE)
+		self.conn = sql.connect(relPath)
+		self.cursor = self.conn.cursor()
+		return None
 
 	def terminate(self):
-		#self.conn.close()
+		self.conn.close()
 		return None
