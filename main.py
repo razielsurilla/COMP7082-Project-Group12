@@ -4,12 +4,16 @@ from app.pages import home
 from dbmodule.sql import Sql
 from dbmodule.calendardata import CalendarData
 
-calendar_ui = home.Calendar()
+
 sqlInstance = None
 
 @ui.page('/')
 def home_page():
-	with_sidebar(calendar_ui.show)
+    # calendar_ui = home.Calendar()
+    # with_sidebar(calendar_ui.show)
+    home_tabs = home.HomeTabs()
+    # home_tabs.show()
+    with_sidebar(home_tabs.show)
 
 @ui.page('/events')
 def events_page():
@@ -44,6 +48,7 @@ def terminateModules():
 	return None
 
 if __name__ in {"__main__", "__mp_main__"}:
-	initModules()
-	ui.run()
-	terminateModules()
+    initModules()
+    ui.run()
+    terminateModules()
+

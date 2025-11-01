@@ -8,6 +8,6 @@ def with_sidebar(page_content):
         buttons()
 
         # main content
-        with ui.column().classes('flex-1 p-6 overflow-auto'):
+        with ui.column().classes('flex-1 p-6 overflow-hidden'):
             page_content()
 

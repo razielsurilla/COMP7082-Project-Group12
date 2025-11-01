@@ -75,3 +75,18 @@ class Calendar:
                 ui.button('>', on_click=self.next_month).classes('w-10 h-10 self-center')
 
             self.render_calendar()
+
+class HomeTabs:
+    def show(self):
+        calendar_ui = Calendar()
+        with ui.tabs().classes('w-full fixed bottom-0 left-0') as tabs:
+            calendar_tab = ui.tab("Main Calendar")
+            important_dates = ui.tab('Important Dates')
+            upcoming_events = ui.tab('Upcoming Events')
+        with ui.tab_panels(tabs, value=calendar_tab).classes('w-full').props('animated=False'):
+            with ui.tab_panel(calendar_tab):
+                calendar_ui.show()
+            with ui.tab_panel(important_dates).classes('pl-20'):
+                ui.label("Important Dates")
+            with ui.tab_panel(upcoming_events).classes('pl-20'):
+                ui.label("Upcoming Events")
