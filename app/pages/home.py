@@ -33,17 +33,26 @@ class Calendar:
                 for day in days:
                     is_current = day.month == self.state["month"]
                     is_today = day == self.today
-                    bg = 'bg-white' if is_current else 'bg-gray-100'
+                    bg = 'bg-white' if is_current else 'bg-gray-200'
                     if is_today:
-                        bg = 'bg-blue-200'  # highlight today
+                        bg = 'bg-blue-100'  # highlight today
 
                     # card is one day cell
                     #TODO: Make Clickable to pop up modal
-                    with ui.card().classes(f'w-24 h-24 flex p-2 {bg}'):
+                    with ui.card().classes(f'w-24 h-24 block p-2 {bg}'):
                         weekend = 'text-red' if (day.weekday() == 5 or day.weekday() == 6) else 'text-black'
                         ui.label(str(day.day)).classes(f'{weekend}')
-
-                        #TODO: List Day Events Here
+                        if True: # TODO: Check if day has events, and check length
+                            with ui.element('div').classes('flex'):
+                                ui.icon('circle').classes('text-blue-500 text-xs pt-1 pr-1')
+                                ui.label("One")
+                        if True:
+                            with ui.element('div').classes('flex'):
+                                ui.icon('circle').classes('text-blue-500 text-xs pt-1 pr-1')
+                                ui.label("Two")
+                        if True: #if more than two events
+                            num_events = 3 #TODO: Fix logic later
+                            ui.label(f"+{num_events} More").classes('text-center')
 
     def prev_month(self):
         # wraparound jan -> dec
