@@ -37,8 +37,11 @@ class Calendar:
                         bg = 'bg-blue-200'  # highlight today
 
                     # card is one day cell
+                    #TODO: Make Clickable to pop up modal
                     with ui.card().classes(f'w-20 h-20 flex items-center justify-center {bg}'):
                         ui.label(str(day.day))
+
+                        #TODO: List Day Events Here
 
     def prev_month(self):
         # wraparound jan -> dec
@@ -60,13 +63,45 @@ class Calendar:
         self.calendar_label.set_text(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}')
         self.render_calendar()  # redraw for next month
 
+    def update_state(self, month, year):
+        self.state["month"] = month
+        self.state["year"] = year
+        self.render_calendar()
+
     def show(self):
+
+        months = list(calendar.month_name)[1:]
+        years = [str(y) for y in range(self.today.year - 1000, self.today.year + 1000)]
+
         # this is so everything is centered
         with ui.column().classes('justify-center items-center w-full'):    
             # month label on top
-            self.calendar_label = ui.label(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}') \
-                                 .classes('text-3xl font-bold mb-4 justify-center text-center')
+            #self.calendar_label = ui.label(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}') \
+            #                     .classes('text-3xl font-bold mb-4 justify-center text-center')
             # TODO: Make these dropdown menus with on_change events (set state, set text, render_calendar)
+            with ui.row():
+                def on_month_change(e):
+                    month_index = months.index(e.value) + 1
+                    self.update_state(month_index, self.state["year"])
+
+                def on_year_change(e):
+                    year_value = int(e.value)
+                    self.update_state(self.state["month"], year_value)
+
+                ui.select(
+                    options=months,
+                    value=calendar.month_name[self.state["month"]],
+                    on_change=on_month_change
+                )
+
+                ui.select(
+                    options=years,
+                    value=str(self.state["year"]),
+                    on_change=on_year_change
+                )
+
+                # Implement Later, not important for now
+                # ui.button("Today", on_click=lambda: self.update_state(self.today.month, self.today.year))
 
             # row here, so the arrows are on the same row as the calendar
             with ui.row().classes('items-center justify-center gap-4'):
