@@ -9,6 +9,8 @@ class Calendar:
         self.state = {"year": self.today.year, "month": self.today.month}
         self.calendar_container = None
         self.calendar_label = None
+        self.month_select = None
+        self.year_select = None
 
     def generate_month(self, year: int, month: int):
         first_day = date(year, month, 1)
@@ -24,10 +26,9 @@ class Calendar:
         days = self.generate_month(self.state["year"], self.state["month"])
 
         with self.calendar_container:
-            with ui.grid(columns=7).classes('gap-2 justify-center'):
+            with ui.grid(columns=7).classes('gap-x-4 gap-y-2 justify-center'):
                 for weekday in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']:
                     ui.label(weekday).classes('text-md font-bold text-center')
-                    #TODO: Make Sat/Sun Red
                     #TODO: Make Buttons
                 for day in days:
                     is_current = day.month == self.state["month"]
@@ -38,8 +39,9 @@ class Calendar:
 
                     # card is one day cell
                     #TODO: Make Clickable to pop up modal
-                    with ui.card().classes(f'w-20 h-20 flex items-center justify-center {bg}'):
-                        ui.label(str(day.day))
+                    with ui.card().classes(f'w-24 h-24 flex p-2 {bg}'):
+                        weekend = 'text-red' if (day.weekday() == 5 or day.weekday() == 6) else 'text-black'
+                        ui.label(str(day.day)).classes(f'{weekend}')
 
                         #TODO: List Day Events Here
 
@@ -50,7 +52,7 @@ class Calendar:
             self.state["year"] -= 1
         else:
             self.state["month"] -= 1
-        self.calendar_label.set_text(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}')
+        # self.calendar_label.set_text(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}')
         self.render_calendar()  # redraw for prev month
 
     def next_month(self):
@@ -60,12 +62,18 @@ class Calendar:
             self.state["year"] += 1
         else:
             self.state["month"] += 1
-        self.calendar_label.set_text(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}')
+        # self.calendar_label.set_text(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}')
         self.render_calendar()  # redraw for next month
 
     def update_state(self, month, year):
         self.state["month"] = month
         self.state["year"] = year
+
+        if self.month_select:
+            self.month_select.set_value(calendar.month_name[self.state["month"]])
+        if self.year_select:
+            self.year_select.set_value(str(self.state["year"]))
+
         self.render_calendar()
 
     def show(self):
@@ -88,13 +96,13 @@ class Calendar:
                     year_value = int(e.value)
                     self.update_state(self.state["month"], year_value)
 
-                ui.select(
+                self.month_select = ui.select(
                     options=months,
                     value=calendar.month_name[self.state["month"]],
                     on_change=on_month_change
                 )
 
-                ui.select(
+                self.year_select = ui.select(
                     options=years,
                     value=str(self.state["year"]),
                     on_change=on_year_change
