@@ -37,9 +37,40 @@ class Calendar:
                     if is_today:
                         bg = 'bg-blue-100'  # highlight today
 
+
+                    def show_day_modal(day=day):
+                        with ui.dialog() as dialog, ui.card().classes('p-4 w-80 h-120 flex items-center rounded-3xl relative bg-[#d9d9d9]'):
+                            with ui.row().classes():
+                                ui.icon('add').classes('text-black absolute top-4 right-4 text-2xl').on(
+                                    'click', lambda: ui.navigate.to('/add-edit'))
+
+                            ui.label(f"{calendar.month_name[day.month]} {day.day}, {day.year}").classes(
+                                'text-xl font-bold text-center align-center'
+                            )
+
+                            # TODO: ForEach Event on Day, make event.
+                            for i in range(1):
+                                with ui.card().classes('w-60 h-20 p-2 flex justify-between'):
+                                    #LS
+                                    with ui.element('div').classes('block mr-auto'):
+                                        ui.label("Event Name").classes('mb-5')
+                                        if True: #If is a recurring event
+                                            with ui.element('div').classes('flex'):
+                                                ui.icon('cached').classes('pt-1 pr-1')
+                                                ui.label("Every 2 Days")
+
+                                    with ui.element('div').classes('block ml-auto justify-right items-end text-right'):
+                                        ui.label(f"12:00")
+                                        if True: #If event has end time
+                                            ui.label("to")
+                                            ui.label(f"1:00")
+
+
+
+                        dialog.open()
                     # card is one day cell
                     #TODO: Make Clickable to pop up modal
-                    with ui.card().classes(f'w-24 h-24 block p-2 {bg}'):
+                    with ui.card().classes(f'w-24 h-24 block p-2 {bg}').on('click', show_day_modal):
                         weekend = 'text-red' if (day.weekday() == 5 or day.weekday() == 6) else 'text-black'
                         ui.label(str(day.day)).classes(f'{weekend}')
                         if True: # TODO: Check if day has events, and check length
@@ -131,12 +162,12 @@ class Calendar:
 class HomeTabs:
     def show(self):
         calendar_ui = Calendar()
-        with ui.tabs().classes('w-full fixed bottom-0 left-0') as tabs:
+        with ui.tabs().classes('w-full fixed bottom-0 left-0 h-10') as tabs:
             calendar_tab = ui.tab("Main Calendar")
             important_dates = ui.tab('Important Dates')
             upcoming_events = ui.tab('Upcoming Events')
-        with ui.tab_panels(tabs, value=calendar_tab).classes('w-full').props('animated=False'):
-            with ui.tab_panel(calendar_tab):
+        with ui.tab_panels(tabs, value=calendar_tab).classes('w-full p-0').props('animated=False'):
+            with ui.tab_panel(calendar_tab).classes('p-0 overflow-hidden'):
                 calendar_ui.show()
             with ui.tab_panel(important_dates).classes('pl-20'):
                 ui.label("Important Dates")
