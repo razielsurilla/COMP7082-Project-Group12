@@ -1,6 +1,6 @@
 from nicegui import ui
 from app.layout import with_sidebar
-from app.pages import home
+from app.pages import home, upload_schedule
 from dbmodule.sql import Sql
 from dbmodule.calendardata import CalendarData
 
@@ -21,7 +21,8 @@ def events_page():
 
 @ui.page('/upload')
 def upload_page():
-	with_sidebar(None)
+	upload_ui = upload_schedule.UploadSchedule()
+	with_sidebar(upload_ui.show)
 
 @ui.page('/add-edit')
 def add_edit_page():
