@@ -1,5 +1,5 @@
 # from ocrmodule.ocr_handler import extract_text_from_image
-from ocrmodule.llm_parser import parse_text_to_json
+from llmmodule.llm_parser import parse_text_to_json
 import base64
 
 # def process_image_to_db(image_path: str):

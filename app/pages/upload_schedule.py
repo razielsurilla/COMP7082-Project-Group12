@@ -1,7 +1,7 @@
 from nicegui import events,  ui
 import asyncio
 import os
-from ocrmodule import pipeline
+from llmmodule import pipeline
 
 UPLOAD_DIRECTORY =  "uploaded_schedule_files"
 
