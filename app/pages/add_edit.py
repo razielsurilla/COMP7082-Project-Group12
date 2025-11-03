@@ -3,17 +3,19 @@ from app.components.addedit import datePickerLabel, timePickerLabel
 
 # TODO: this should be a component, then home.py should create a Calendar object
 class AddEditEvent:
-	def __init__(self):
+	def __init__(self, date):
+		self.currentDate = date
 		return None
 
 	def showPage(self):
 		with ui.column().classes("justify-center items-center h-screen w-full pl-[8rem] gap-8"):
+			ui.label(self.currentDate)
 			with ui.row():
 				with ui.column():
 					self.eventEntryPanel()
 					self.alertsPanel()
 				with ui.column():
-					ui.textarea(label='Event Description', value='some text').props('clearable')
+					ui.textarea(label='Event Description').props('clearable')
 					resultDescription = ui.label()
 					self.recurringEventPanel()
 			ui.button('Save Event', on_click=lambda: ui.notify('You clicked me!'))

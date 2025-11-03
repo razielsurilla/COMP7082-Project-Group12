@@ -1,6 +1,7 @@
-from nicegui import ui
+from nicegui import app, ui
 from datetime import date, timedelta
 import calendar
+from app.sharedVars import SharedVars
 
 # TODO: this should be a component, then home.py should create a Calendar object
 class Calendar:
@@ -11,6 +12,7 @@ class Calendar:
 		self.calendar_label = None
 		self.month_select = None
 		self.year_select = None
+		self.sharedData = SharedVars()
 
 	def generate_month(self, year: int, month: int):
 		first_day = date(year, month, 1)
@@ -41,6 +43,7 @@ class Calendar:
 					def show_day_modal(day=day):
 						with ui.dialog() as dialog, ui.card().classes('p-4 w-80 h-120 flex items-center rounded-3xl relative bg-[#d9d9d9]'):
 							with ui.row().classes():
+								app.storage.user.update({self.sharedData.ADDEDIT_DATA_KEY: f"{calendar.month_name[day.month]} {day.day}, {day.year}"})
 								ui.icon('add').classes('text-black absolute top-4 right-4 text-2xl').on(
 									'click', lambda: ui.navigate.to('/add-edit'))
 

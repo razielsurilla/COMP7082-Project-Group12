@@ -1,9 +1,9 @@
-from nicegui import ui
+from nicegui import app, ui
+from app.sharedVars import SharedVars
 from app.layout import with_sidebar, with_justSidebar
 from app.pages import home, upload_schedule, add_edit
 from dbmodule.sql import Sql
 from dbmodule.calendardata import CalendarData
-
 
 sqlInstance = None
 
@@ -26,7 +26,8 @@ def upload_page():
 
 @ui.page('/add-edit')
 def add_edit_page():
-	addEditEvent = add_edit.AddEditEvent()
+	data = app.storage.user.get(sharedVariables.ADDEDIT_DATA_KEY, sharedVariables.DATA_DEFAULT_VALUE)
+	addEditEvent = add_edit.AddEditEvent(data)
 	with_justSidebar(addEditEvent.showPage)
 	#with_sidebar(None)
 
@@ -35,7 +36,10 @@ def assistant_page():
 	with_sidebar(None)
 
 def initModules():
+	global sharedVariables
 	global sqlInstance
+	
+	sharedVariables = SharedVars()
 	sqlInstance = Sql()
 	calendarData = CalendarData(sqlInstance)
 	calendarData.buildData()
@@ -52,6 +56,6 @@ def terminateModules():
 
 if __name__ in {"__main__", "__mp_main__"}:
 	initModules()
-	ui.run()
+	ui.run(storage_secret=sharedVariables.STORAGE_SECRET, port=sharedVariables.PORT)
 	terminateModules()
 
