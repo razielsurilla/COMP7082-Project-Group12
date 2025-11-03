@@ -220,3 +220,6 @@ __marimo__/
 
 # upload schedule files
 uploaded_schedule_files/
+
+# nicegui shared data
+.nicegui/
