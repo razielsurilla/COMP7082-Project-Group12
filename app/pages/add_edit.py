@@ -1,5 +1,5 @@
 from nicegui import ui
-from app.components.date_picker_label import datePickerLabel, timePickerLabel
+from app.components.addedit import datePickerLabel, timePickerLabel
 
 # TODO: this should be a component, then home.py should create a Calendar object
 class AddEditEvent:
@@ -7,7 +7,7 @@ class AddEditEvent:
 		return None
 
 	def showPage(self):
-		with ui.column():
+		with ui.column().classes("justify-center items-center h-screen w-full pl-[8rem] gap-8"):
 			with ui.row():
 				with ui.column():
 					self.eventEntryPanel()
