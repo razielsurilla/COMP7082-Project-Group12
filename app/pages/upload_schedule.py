@@ -1,6 +1,7 @@
 from nicegui import events,  ui
 import asyncio
 import os
+from ocrmodule import pipeline
 
 UPLOAD_DIRECTORY =  "uploaded_schedule_files"
 
@@ -23,7 +24,7 @@ class UploadSchedule:
 
         os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)       
 
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.1)
         
         filename = self.uploaded_file.name
         file_path = os.path.join(UPLOAD_DIRECTORY, filename)
@@ -32,8 +33,27 @@ class UploadSchedule:
 
         print(filename)
 
-        # replace this. should move to new page with the new events
-        self.update_display()
+        # TODO: pipeline shit
+        name, extension = os.path.splitext(filename)
+        extension = extension.replace(".", "")
+
+        loop = asyncio.get_running_loop()
+        try:
+            result = await loop.run_in_executor(
+                None, pipeline.process_image_to_db, file_path, extension
+            )
+            print("processing results:", result)
+
+            self.card_container.clear()
+
+            # change this, should send the user to "Upload 3/3" (see Figma)
+            self.update_display()
+
+        except Exception as e:
+            print(f"processing error: {e}")
+            self.card_container.clear()
+            with self.card_container:
+                ui.label("Processing failed.").classes("text-red-600 text-md font-medium")       
 
     # this should be done one process button click
     def handle_upload(self, e: events.UploadEventArguments):
