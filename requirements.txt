@@ -1,2 +1,4 @@
 nicegui==3.0.0
 pytesseract>=0.3.13
+Pillow>=8.0.0
+google-generativeai>=0.8.3
