@@ -130,7 +130,7 @@ def show() -> None:
         with container:
             with ui.element('div').classes(
                 # two columns on md+, one on small; slight right shift with pl-6 per your version
-                'grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center w-full pl-6'
+                'grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center w-full pl-10'
             ):
                 for evt in filtered:
                     _event_card(evt)
