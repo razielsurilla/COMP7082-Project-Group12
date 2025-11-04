@@ -2,7 +2,7 @@ from nicegui import ui
 
 def sidebar():
     with ui.column().classes('group fixed w-20 h-full bg-gray-200 p-4 justify-start gap-6'
-                             'transition-all duration-300 hover:w-48'
+                             'transition-all duration-300 hover:w-48 z-20'
                              ):
 
         # for now, all links are to the homepage "/"

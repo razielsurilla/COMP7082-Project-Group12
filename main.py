@@ -1,49 +1,30 @@
+# main.py
 from nicegui import ui
-from app.layout import with_sidebar
-from app.pages import home
 from dbmodule.sql import Sql
 from dbmodule.calendardata import CalendarData
+from app.routes import register_pages
 
-calendar_ui = home.Calendar()
-sqlInstance = None
 
-@ui.page('/')
-def home_page():
-	with_sidebar(calendar_ui.show)
-
-@ui.page('/events')
-def events_page():
-	with_sidebar(None)
-
-@ui.page('/upload')
-def upload_page():
-	with_sidebar(None)
-
-@ui.page('/add-edit')
-def add_edit_page():
-	with_sidebar(None)
-
-@ui.page('/assistant')
-def assistant_page():
-	with_sidebar(None)
-
+# ---------- MODULE SETUP ----------
 def initModules():
-	global sqlInstance
-	sqlInstance = Sql()
-	calendarData = CalendarData(sqlInstance)
-	calendarData.buildData()
-	calendarData.addData(None, None, None)
-	calendarData.updateDescription(None, None)
-	calendarData.updateDetail(None, None);
-	calendarData.updateDate(None, None);
-	return None
+    """Initialize database and return both sqlInstance and calendarData."""
+    sqlInstance = Sql()                       # opens SQLite and applies PRAGMAs
+    calendarData = CalendarData(sqlInstance.conn)
+    calendarData.buildData()                  # ensure events table exists
+    return sqlInstance, calendarData
 
-def terminateModules():
-	global sqlInstance
-	sqlInstance.terminate()
-	return None
 
+def terminateModules(sqlInstance):
+    """Gracefully close database connection."""
+    try:
+        sqlInstance.terminate()
+    except Exception:
+        pass
+
+
+# ---------- APP ENTRY ----------
 if __name__ in {"__main__", "__mp_main__"}:
-	initModules()
-	ui.run()
-	terminateModules()
+    sqlInstance, calendarData = initModules()
+    register_pages(calendarData)
+    ui.run(title="Calendar App", reload=False)
+    terminateModules(sqlInstance)
