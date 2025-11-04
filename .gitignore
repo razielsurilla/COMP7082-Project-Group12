@@ -217,3 +217,9 @@ __marimo__/
 
 #JetBrains IDE Config
 .idea
+
+# upload schedule files
+uploaded_schedule_files/
+
+# nicegui shared data
+.nicegui/

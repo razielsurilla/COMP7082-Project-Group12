@@ -1,17 +1,54 @@
-# main.py
-from nicegui import ui
+from nicegui import app, ui
+from app.sharedVars import SharedVars
+from app.layout import with_sidebar, with_justSidebar
+from app.pages import home, upload_schedule, add_edit
 from dbmodule.sql import Sql
 from dbmodule.calendardata import CalendarData
-from app.routes import register_pages
 
+sqlInstance = None
+
+@ui.page('/')
+def home_page():
+	# calendar_ui = home.Calendar()
+	# with_sidebar(calendar_ui.show)
+	home_tabs = home.HomeTabs()
+	# home_tabs.show()
+	with_sidebar(home_tabs.show)
+
+@ui.page('/events')
+def events_page():
+	with_sidebar(None)
+
+@ui.page('/upload')
+def upload_page():
+	upload_ui = upload_schedule.UploadSchedule()
+	with_sidebar(upload_ui.show)
+
+@ui.page('/add-edit')
+def add_edit_page():
+	data = app.storage.user.get(sharedVariables.ADDEDIT_DATA_KEY, sharedVariables.DATA_DEFAULT_VALUE)
+	addEditEvent = add_edit.AddEditEvent(data)
+	with_justSidebar(addEditEvent.showPage)
+	#with_sidebar(None)
+
+@ui.page('/assistant')
+def assistant_page():
+	with_sidebar(None)
 
 # ---------- MODULE SETUP ----------
 def initModules():
-    """Initialize database and return both sqlInstance and calendarData."""
-    sqlInstance = Sql()                       # opens SQLite and applies PRAGMAs
-    calendarData = CalendarData(sqlInstance.conn)
-    calendarData.buildData()                  # ensure events table exists
-    return sqlInstance, calendarData
+	global sharedVariables
+	global sqlInstance
+
+	sharedVariables = SharedVars()
+	sqlInstance = Sql()
+	calendarData = CalendarData(sqlInstance)
+	calendarData.buildData()
+	calendarData.addData(None, None, None)
+	calendarData.updateDescription(None, None)
+	calendarData.updateDetail(None, None);
+	calendarData.updateDate(None, None);
+	return None
 
 
 def terminateModules(sqlInstance):
@@ -21,10 +58,8 @@ def terminateModules(sqlInstance):
     except Exception:
         pass
 
-
-# ---------- APP ENTRY ----------
 if __name__ in {"__main__", "__mp_main__"}:
-    sqlInstance, calendarData = initModules()
-    register_pages(calendarData)
-    ui.run(title="Calendar App", reload=False)
-    terminateModules(sqlInstance)
+	initModules()
+	ui.run(storage_secret=sharedVariables.STORAGE_SECRET, port=sharedVariables.PORT)
+	terminateModules()
+
