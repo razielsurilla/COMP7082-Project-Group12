@@ -33,7 +33,8 @@ def add_edit_page():
 
 @ui.page('/assistant')
 def assistant_page():
-	with_sidebar(None)
+#	with_sidebar(None)
+    ui.label("TBD")
 
 # ---------- MODULE SETUP ----------
 def initModules():
