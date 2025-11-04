@@ -9,11 +9,26 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 def parse_text_to_json(encoded_image, image_type):
 	# there'll be more to this prompt later
 	# need to figure out how the events are stored in the db before one-hot prompting 
-	prompt = f"""
+	prompt = """
 	You are an assistant that extracts structured scheduling data from OCR text.
 	Return **only valid JSON**, no explanations or comments.
 
-	I'll kill you if you return **anything other than** valid JSON data.
+	There are should only be four parts to each JSON object, which are the following:
+	1. event
+	2. date
+	3. description
+	4. detail
+
+	Here is an example of a valid JSON object:
+	{
+		"event": "Math Lecture",
+		"date": "1990-12-31",
+		"description": "Math lecture in lecture hall 1205. Taught by John Doe.",
+		"detail": "From 12:30 to 14:30"
+	}
+
+
+	Return only valid JSON, no markdown, comments, or extra text.
 	"""
 
 	try:
