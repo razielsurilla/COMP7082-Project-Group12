@@ -1,7 +1,7 @@
 from nicegui import app, ui
 from app.sharedVars import SharedVars
 from app.layout import with_sidebar, with_justSidebar
-from app.pages import home, upload_schedule, add_edit
+from app.pages import home, upload_schedule, add_edit, events
 from dbmodule.sql import Sql
 from dbmodule.calendardata import CalendarData
 
@@ -17,7 +17,7 @@ def home_page():
 
 @ui.page('/events')
 def events_page():
-	with_sidebar(None)
+	with_sidebar(events.show)
 
 @ui.page('/upload')
 def upload_page():
@@ -35,10 +35,11 @@ def add_edit_page():
 def assistant_page():
 	with_sidebar(None)
 
+# ---------- MODULE SETUP ----------
 def initModules():
 	global sharedVariables
 	global sqlInstance
-	
+
 	sharedVariables = SharedVars()
 	sqlInstance = Sql()
 	calendarData = CalendarData(sqlInstance)
@@ -49,13 +50,16 @@ def initModules():
 	calendarData.updateDate(None, None);
 	return None
 
-def terminateModules():
-	global sqlInstance
-	sqlInstance.terminate()
-	return None
+
+def terminateModules(sqlInstance):
+    """Gracefully close database connection."""
+    try:
+        sqlInstance.terminate()
+    except Exception:
+        pass
 
 if __name__ in {"__main__", "__mp_main__"}:
 	initModules()
 	ui.run(storage_secret=sharedVariables.STORAGE_SECRET, port=sharedVariables.PORT)
-	terminateModules()
+	terminateModules(sqlInstance)
 
