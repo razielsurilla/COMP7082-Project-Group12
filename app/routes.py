@@ -2,11 +2,16 @@ from nicegui import ui
 from app.layout import with_sidebar
 from app.pages import home, events
 
-def register_pages():
-	@ui.page('/') # the route the page will render on
-	def home_page():
-		home.show()
-
+def register_pages(calendarData):
+    """
+    Register all NiceGUI pages.
+    - Home uses the Calendar component's .show()
+    - Events is called without DB arg (fallback compatible)
+    - Add/Edit remains a placeholder
+    """
+    @ui.page('/') # the route the page will render on
+    def home_page():
+        home.show()
     @ui.page('/events')
     def events_page():
         """List of events page."""
