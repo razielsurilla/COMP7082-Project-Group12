@@ -10,7 +10,7 @@ def datePickerLabel(labelName, clickEvent):
 		ui.icon('edit_calendar').on('click', menu.open).classes('cursor-pointer')
 
 def timePickerLabel(labelName, clickEvent):
-	with ui.input('Time') as time:
+	with ui.input(labelName, on_change=clickEvent) as time:
 		with ui.menu().props('no-parent-event') as menu:
 			with ui.time().bind_value(time):
 				with ui.row().classes('justify-end'):
