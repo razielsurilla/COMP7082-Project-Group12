@@ -27,7 +27,7 @@ def upload_page():
 @ui.page('/add-edit')
 def add_edit_page():
 	data = app.storage.user.get(sharedVariables.ADDEDIT_DATA_KEY, sharedVariables.DATA_DEFAULT_VALUE)
-	addEditEvent = add_edit.AddEditEvent(data)
+	addEditEvent = add_edit.AddEditEvent(data, calendarData)
 	with_justSidebar(addEditEvent.showPage)
 	#with_sidebar(None)
 
@@ -40,15 +40,12 @@ def assistant_page():
 def initModules():
 	global sharedVariables
 	global sqlInstance
+	global calendarData
 
 	sharedVariables = SharedVars()
 	sqlInstance = Sql()
 	calendarData = CalendarData(sqlInstance)
 	calendarData.buildData()
-	calendarData.addData(None, None, None)
-	calendarData.updateDescription(None, None)
-	calendarData.updateDetail(None, None);
-	calendarData.updateDate(None, None);
 	return None
 
 

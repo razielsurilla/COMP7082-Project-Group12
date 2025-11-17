@@ -32,12 +32,12 @@ class EventDateTime:
 
 # TODO: this should be a component, then home.py should create a Calendar object
 class AddEditEvent:
-	def __init__(self, date):
+	def __init__(self, date, calendarData):
 		self.currentDate = date
 		self.pageData = AddEditEventData()
 		self.eventStartData = EventDateTime()
 		self.eventEndData = EventDateTime()
-		
+		self.calendarData = calendarData
 		return None
 
 	def showPage(self):
@@ -46,6 +46,10 @@ class AddEditEvent:
 		
 		def onSaveEvent(event):
 			print(self.pageData);
+			self.calendarData.addData(None, None, None)
+			self.calendarData.updateDescription(None, None)
+			self.calendarData.updateDetail(None, None)
+			self.calendarData.updateDate(None, None)
 		
 		with ui.column().classes("justify-center items-center h-screen w-full pl-[8rem] gap-8"):
 			ui.label(self.currentDate)
