@@ -4,16 +4,16 @@ from datetime import datetime, date, timedelta
 
 # data tables
 class Event(Enum):
-	TABLE_NAME = "events"
-	EVENT_NAME = "name"
-	START_DATE = "start_date"
-	END_DATE = "end_date"
-	DESC = "description"
-	RECURRING = "is_recurring"
-	ALERTING = "is_alerting"
-	R_OPTION = "recurring_option"
-	A_OPTIONS = "alerting_options"
-	
+    TABLE_NAME = "events"
+    EVENT_NAME = "name"
+    START_DATE = "start_date"
+    END_DATE = "end_date"
+    DESC = "description"
+    RECURRING = "is_recurring"
+    ALERTING = "is_alerting"
+    R_OPTION = "recurring_option"
+    A_OPTIONS = "alerting_options"
+
 class CalendarData:
 	def __init__(self, sqlCursor):
 		self.cursor = sqlCursor
@@ -72,3 +72,18 @@ class CalendarData:
 	def getData(self, dataFrame):
 		query = ""
 		return None
+
+	def findEventsInRangeMainCal(self, oldDate, newDate):
+		query = f"select * from {Event.TNAME.value} where {Event.DATE.value} between {oldDate} and {newDate};)"
+		#self.cursor.execute(query).fetchall()
+		#TODO: SORT VALUES INTO DICTIONARY FORM, key: day, value: list[events]
+		d = {"a": [1, 2, 3]}
+		return d
+
+	def findEventsInRangeImpDate(self, oldDate, newDate):
+		query = f"select * from {Event.TNAME.value} where {Event.DATE.value} between {oldDate} and {newDate};)"
+		#self.cursor.execute(query).fetchall()
+		#TODO: SORT VALUES INTO DICTIONARY FORM, key: day, value: list[events]
+		d = {"a": [1, 2, 3]}
+		return d
+
