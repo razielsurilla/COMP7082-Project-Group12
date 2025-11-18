@@ -49,6 +49,7 @@ def initModules():
 	calendarData.buildData()
 	calendarData.verifyData()
 	calendarData.printAllData()
+	calendarData.getAllData()
 	return None
 
 

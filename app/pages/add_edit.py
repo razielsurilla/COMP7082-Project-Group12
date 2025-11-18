@@ -3,34 +3,7 @@ from app.components.addedit import datePickerLabel, timePickerLabel
 from dataclasses import dataclass, field
 from datetime import datetime, date, timedelta
 from typing import ClassVar, List
-from app.sharedVars import SharedVars
-
-@dataclass
-class AddEditEventData:
-	eventName: str = "dummy"
-	eventDescription: str = "dummy"
-	eventStartDate: float = 0
-	eventEndDate: float = 0
-	isRecurringEvent: bool = False
-	isAlerting: bool = False
-	recurringEventOptionIndex: int = 0
-	selectedAlertCheckboxes: List[int] = field(default_factory=list)
-			
-@dataclass
-class EventDateTime:
-	DATE_FORMAT: ClassVar[str] = "%Y-%m-%d/%H:%M"
-	dateStr: str = ""
-	timeStr: str = ""
-	
-	def getDateTimestamp(self):
-		dateObj = datetime.now()
-		try:
-			dateObj = datetime.strptime(f"{self.dateStr}/{self.timeStr}", self.DATE_FORMAT)
-			return dateObj.timestamp()
-		except ValueError as e:
-			print("event date incorrect format!")
-		return 0
-	
+from app.sharedVars import AddEditEventData, EventDateTime
 
 # TODO: this should be a component, then home.py should create a Calendar object
 class AddEditEvent:

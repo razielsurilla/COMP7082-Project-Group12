@@ -1,6 +1,7 @@
 from enum import Enum
 import json
 from datetime import datetime, date, timedelta
+from app.sharedVars import AddEditEventData
 
 # data tables
 class Event(Enum):
@@ -55,13 +56,28 @@ class CalendarData:
 		for row in rows:
 			print(row)
 	
-	def fillQueryData(self):
+	def getAllData(self):
+		query = (f"select * from {Event.TABLE_NAME.value};")
+		self.sql.execute(query)
+		
 		rows = self.sql.fetchall()
 		rowCount = len(rows)
+		dataList = []
 		if rowCount > 0:
 			for i in range(rowCount):
-				dataFrame = rows[i][0]
-				#dataList.append(dataFrame)
+				dataFrame = AddEditEventData()
+				dataFrame.eventName = rows[i][0]
+				dataFrame.eventStartDate = rows[i][1]
+				dataFrame.eventEndDate = rows[i][2]
+				dataFrame.eventDescription = rows[i][3]
+				dataFrame.isRecurringEvent = rows[i][4]
+				dataFrame.isAlerting = rows[i][5]
+				dataFrame.recurringEventOptionIndex = rows[i][6]
+				dataFrame.selectedAlertCheckboxes = rows[i][7]
+				dataList.append(dataFrame)
+		
+		print(dataList)
+		return dataList
 	
 	def addData(self, dataFrame):
 		query = (f"insert into {Event.TABLE_NAME.value} "
