@@ -44,8 +44,9 @@ def initModules():
 
 	sharedVariables = SharedVars()
 	sqlInstance = Sql()
-	calendarData = CalendarData(sqlInstance)
+	calendarData = CalendarData(sqlInstance.cursor)
 	calendarData.buildData()
+	calendarData.verifyData()
 	return None
 
 
