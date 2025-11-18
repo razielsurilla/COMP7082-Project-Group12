@@ -45,6 +45,7 @@ def initModules():
 	sharedVariables = SharedVars()
 	sqlInstance = Sql()
 	calendarData = CalendarData(sqlInstance.cursor)
+	
 	calendarData.buildData()
 	calendarData.verifyData()
 	return None
@@ -60,5 +61,5 @@ def terminateModules(sqlInstance):
 if __name__ in {"__main__", "__mp_main__"}:
 	initModules()
 	ui.run(storage_secret=sharedVariables.STORAGE_SECRET, port=sharedVariables.PORT)
-	terminateModules(sqlInstance)
+	#terminateModules(sqlInstance)
 

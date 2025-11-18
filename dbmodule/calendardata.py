@@ -1,5 +1,6 @@
 from enum import Enum
 import json
+from datetime import datetime, date, timedelta
 
 # data tables
 class Event(Enum):
@@ -20,8 +21,9 @@ class CalendarData:
 	
 	def buildData(self):
 		query = (f"create table if not exists {Event.TABLE_NAME.value}"
-		f"({Event.START_DATE.value} DATE,"
-		f"{Event.END_DATE.value} DATE,"
+		f"({Event.EVENT_NAME.value} TEXT,"
+		f"{Event.START_DATE.value} REAL NOT NULL,"
+		f"{Event.END_DATE.value} REAL NOT NULL,"
 		f"{Event.DESC.value} TEXT,"
 		f"{Event.RECURRING.value} BOOLEAN,"
 		f"{Event.ALERTING.value} BOOLEAN,"
@@ -34,8 +36,15 @@ class CalendarData:
 		self.cursor.execute(query)
 		return None
 	
+	# don't execute this unless needed
+	def deleteData(self):
+		query = (f"drop table if exists {Event.TABLE_NAME.value};")
+		
+		print(query)
+		self.cursor.execute(query)
+		return None
+	
 	def verifyData(self):
-		#query = (f".schema {Event.TABLE_NAME.value}")
 		query = (f"PRAGMA table_info({Event.TABLE_NAME.value});")
 		print(query)
 		self.cursor.execute(query)
@@ -47,46 +56,19 @@ class CalendarData:
 		for row in rows:
 			print(row)
 	
-	def addData(self, date, description, detail):
+	def addData(self, dataFrame):
 		query = (f"insert into {Event.TABLE_NAME.value} "
-		f"({Event.DATE.value}, {Event.DESC.value}, {Event.DETAIL.value}) "
-		f"values ({date}, {description}, {detail})")
+		f"({Event.EVENT_NAME.value}, {Event.START_DATE.value}, {Event.END_DATE.value}, {Event.DESC.value},"
+		f"{Event.RECURRING.value}, {Event.ALERTING.value}, {Event.R_OPTION.value}, {Event.A_OPTIONS.value})"
+		f"values ('{dataFrame.eventName}', {dataFrame.eventStartDate}, {dataFrame.eventEndDate}, "
+		f"'{dataFrame.eventDescription}', {dataFrame.isRecurringEvent}, {dataFrame.isAlerting}, "
+		f"{dataFrame.recurringEventOptionIndex}, '{json.dumps(dataFrame.selectedAlertCheckboxes)}'"
+		f");")
 		
 		print(query)
-		#self.cursor.execute(query)
+		self.cursor.execute(query)
 		return None
 
-	def updateDescription(self, desc, date):
-		query = (f"update {Event.TABLE_NAME.value} "
-		f"set ({Event.DESC.value} = {desc} "
-		f"where {Event.DATE.value} = {date})")
-		
-		print(query)
-		#self.cursor.execute(query)
-		return None
-
-	def updateDetail(self, desc, date):
-		query = (f"update {Event.TABLE_NAME.value} "
-		f"set ({Event.DESC.value} = {desc} "
-		f"where {Event.DATE.value} = {date})")
-		
-		print(query)
-		#self.cursor.execute(query)
-		return None
-	
-	def updateDate(self, oldDate, newDate):
-		query = (f"select {Event.DESC.value}, {Event.DETAIL.value} from {Event.TABLE_NAME.value} "
-		f"where {Event.DATE.value} = {oldDate})")
-		print(query)
-		#result = self.cursor.execute(query)
-		desc = None
-		detail = None
-		#desc, detail = result.fetchone()
-		
-		query = (f"delete from {Event.TABLE_NAME.value} "
-		f"where {Event.DATE.value} = {oldDate})")
-		print(query)
-		#self.cursor.execute(query)
-		
-		self.addData(newDate, desc, detail)
+	def getData(self, dataFrame):
+		query = ""
 		return None

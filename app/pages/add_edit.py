@@ -6,10 +6,10 @@ from typing import ClassVar, List
 
 @dataclass
 class AddEditEventData:
-	eventName: str = ""
-	eventDescription: str = ""
-	eventStartDate: date = field(default_factory=datetime.now)
-	eventEndDate: date = field(default_factory=datetime.now)
+	eventName: str = "dummy"
+	eventDescription: str = "dummy"
+	eventStartDate: float = 0
+	eventEndDate: float = 0
 	isRecurringEvent: bool = False
 	isAlerting: bool = False
 	recurringEventOptionIndex: int = 0
@@ -21,13 +21,14 @@ class EventDateTime:
 	dateStr: str = ""
 	timeStr: str = ""
 	
-	def getDate(self):
+	def getDateTimestamp(self):
+		dateObj = datetime.now()
 		try:
-			self.eventStartDate = date.strptime(f"{self.dateStr}/{self.timeStr}", self.DATE_FORMAT)
-		except ValueError:
+			dateObj = datetime.strptime(f"{self.dateStr}/{self.timeStr}", self.DATE_FORMAT)
+			return dateObj.timestamp()
+		except ValueError as e:
 			print("event date incorrect format!")
-		
-		return date
+		return 0
 	
 
 # TODO: this should be a component, then home.py should create a Calendar object
@@ -45,11 +46,10 @@ class AddEditEvent:
 			self.pageData.eventDescription = event.value
 		
 		def onSaveEvent(event):
-			print(self.pageData);
-			self.calendarData.addData(None, None, None)
-			self.calendarData.updateDescription(None, None)
-			self.calendarData.updateDetail(None, None)
-			self.calendarData.updateDate(None, None)
+			self.pageData.eventStartDate = self.eventStartData.getDateTimestamp()
+			self.pageData.eventEndDate = self.eventEndData.getDateTimestamp()
+			print(self.pageData)
+			self.calendarData.addData(self.pageData)
 		
 		with ui.column().classes("justify-center items-center h-screen w-full pl-[8rem] gap-8"):
 			ui.label(self.currentDate)
