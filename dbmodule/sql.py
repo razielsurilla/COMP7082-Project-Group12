@@ -15,3 +15,18 @@ class Sql:
 	def terminate(self):
 		self.conn.close()
 		return None
+	
+	def commit(self):
+		self.conn.commit()
+	
+	def execute(self, query):
+		print(query)
+		self.cursor.execute(query)
+		
+	def fetchall(self):
+		return self.cursor.fetchall()
+		
+	def rowCount(self):
+		return self.cursor.rowcount
+		
+	

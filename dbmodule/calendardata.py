@@ -15,8 +15,8 @@ class Event(Enum):
     A_OPTIONS = "alerting_options"
 
 class CalendarData:
-	def __init__(self, sqlCursor):
-		self.cursor = sqlCursor
+	def __init__(self, sqlInstance):
+		self.sql = sqlInstance
 		return None
 	
 	def buildData(self):
@@ -32,29 +32,36 @@ class CalendarData:
 		f"PRIMARY kEY ({Event.START_DATE.value}, {Event.END_DATE.value})"
 		f");")
 		
-		print(query)
-		self.cursor.execute(query)
+		self.sql.execute(query)
 		return None
 	
 	# don't execute this unless needed
 	def deleteData(self):
 		query = (f"drop table if exists {Event.TABLE_NAME.value};")
 		
-		print(query)
-		self.cursor.execute(query)
+		self.sql.execute(query)
 		return None
 	
 	def verifyData(self):
 		query = (f"PRAGMA table_info({Event.TABLE_NAME.value});")
-		print(query)
-		self.cursor.execute(query)
+		
+		self.sql.execute(query)
 		self.printQueryData()
 		return None
 	
 	def printQueryData(self):
-		rows = self.cursor.fetchall()
+		rows = self.sql.fetchall()
+		print("number of rows fetched: ", len(rows))
 		for row in rows:
 			print(row)
+	
+	def fillQueryData(self):
+		rows = self.sql.fetchall()
+		rowCount = len(rows)
+		if rowCount > 0:
+			for i in range(rowCount):
+				dataFrame = rows[i][0]
+				#dataList.append(dataFrame)
 	
 	def addData(self, dataFrame):
 		query = (f"insert into {Event.TABLE_NAME.value} "
@@ -65,24 +72,30 @@ class CalendarData:
 		f"{dataFrame.recurringEventOptionIndex}, '{json.dumps(dataFrame.selectedAlertCheckboxes)}'"
 		f");")
 		
-		print(query)
-		self.cursor.execute(query)
+		self.sql.execute(query)
+		self.sql.commit()
+		self.printAllData()
 		return None
 
-	def getData(self, dataFrame):
-		query = ""
+	def printAllData(self):
+		query = (f"select * from {Event.TABLE_NAME.value};")
+		
+		self.sql.execute(query)
+		self.printQueryData()
 		return None
 
 	def findEventsInRangeMainCal(self, oldDate, newDate):
-		query = f"select * from {Event.TNAME.value} where {Event.DATE.value} between {oldDate} and {newDate};)"
-		#self.cursor.execute(query).fetchall()
+		oldDate = ""
+		newDate = ""
+		query = f"select * from {Event.TABLE_NAME.value} where {Event.START_DATE.value} between {oldDate} and {newDate};)"
+		#self.sql.execute(query).fetchall()
 		#TODO: SORT VALUES INTO DICTIONARY FORM, key: day, value: list[events]
 		d = {"a": [1, 2, 3]}
 		return d
 
 	def findEventsInRangeImpDate(self, oldDate, newDate):
-		query = f"select * from {Event.TNAME.value} where {Event.DATE.value} between {oldDate} and {newDate};)"
-		#self.cursor.execute(query).fetchall()
+		query = f"select * from {Event.TABLE_NAME.value} where {Event.START_DATE.value} between {oldDate} and {newDate};)"
+		#self.sql.execute(query).fetchall()
 		#TODO: SORT VALUES INTO DICTIONARY FORM, key: day, value: list[events]
 		d = {"a": [1, 2, 3]}
 		return d

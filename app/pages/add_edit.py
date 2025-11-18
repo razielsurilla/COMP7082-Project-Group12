@@ -3,6 +3,7 @@ from app.components.addedit import datePickerLabel, timePickerLabel
 from dataclasses import dataclass, field
 from datetime import datetime, date, timedelta
 from typing import ClassVar, List
+from app.sharedVars import SharedVars
 
 @dataclass
 class AddEditEventData:

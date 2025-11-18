@@ -44,15 +44,16 @@ def initModules():
 
 	sharedVariables = SharedVars()
 	sqlInstance = Sql()
-	calendarData = CalendarData(sqlInstance.cursor)
+	calendarData = CalendarData(sqlInstance)
 	
 	calendarData.buildData()
 	calendarData.verifyData()
+	calendarData.printAllData()
 	return None
 
 
 def terminateModules(sqlInstance):
-    """Gracefully close database connection."""
+    print("Gracefully close database connection.")
     try:
         sqlInstance.terminate()
     except Exception:
