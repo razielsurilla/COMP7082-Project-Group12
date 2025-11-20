@@ -99,19 +99,24 @@ class CalendarData:
 		self.sql.execute(query)
 		self.printQueryData()
 		return None
+	
+	def getDateFromTimestamp(self, timestamp):
+		dateObj = datetime.fromtimestamp(timestamp)
+		return dateObj
 
-	def findEventsInRangeMainCal(self, oldDate, newDate):
-		oldDate = ""
-		newDate = ""
-		query = f"select * from {Event.TABLE_NAME.value} where {Event.START_DATE.value} between {oldDate} and {newDate};)"
-		#self.sql.execute(query).fetchall()
+	def findEventsInRangeMainCal(self, rangeMin, rangeMax):
+		query = (f"select * from {Event.TABLE_NAME.value} where {Event.START_DATE.value} between {rangeMin} and {rangeMax};")
+		self.sql.execute(query)
+		#self.printAllData()
+		fetchedData = self.sql.fetchall()
+		numFetchedDataRows = len(fetchedData)
 		#TODO: SORT VALUES INTO DICTIONARY FORM, key: day, value: list[events]
 		d = {"a": [1, 2, 3]}
 		return d
 
 	def findEventsInRangeImpDate(self, oldDate, newDate):
-		query = f"select * from {Event.TABLE_NAME.value} where {Event.START_DATE.value} between {oldDate} and {newDate};)"
-		#self.sql.execute(query).fetchall()
+		query = (f"select * from {Event.TABLE_NAME.value} where {Event.START_DATE.value} between {oldDate} and {newDate};")
+		#self.sql.execute(query)
 		#TODO: SORT VALUES INTO DICTIONARY FORM, key: day, value: list[events]
 		d = {"a": [1, 2, 3]}
 		return d

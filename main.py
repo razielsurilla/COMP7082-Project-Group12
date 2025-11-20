@@ -4,6 +4,7 @@ from app.layout import with_sidebar, with_justSidebar
 from app.pages import home, upload_schedule, add_edit, events
 from dbmodule.sql import Sql
 from dbmodule.calendardata import CalendarData
+from datetime import datetime
 
 sqlInstance = None
 
@@ -49,7 +50,11 @@ def initModules():
 	calendarData.buildData()
 	calendarData.verifyData()
 	calendarData.printAllData()
-	calendarData.getAllData()
+	dataFrames = calendarData.getAllData()
+	
+	dateRangeMin = datetime(year=2025, month=1, day=25, hour=10, minute=30, second=0)
+	dateRangeMax = datetime(year=2026, month=1, day=25, hour=10, minute=30, second=0)
+	calendarData.findEventsInRangeMainCal(dateRangeMin.timestamp(), dateRangeMax.timestamp())
 	return None
 
 
