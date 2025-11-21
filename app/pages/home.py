@@ -3,7 +3,7 @@ from nicegui import app, ui
 from datetime import date, timedelta
 import calendar
 
-from app.components import upcoming_events   # ✅ component import
+from app.components import upcoming_events
 from app.sharedVars import SharedVars
 from dbmodule import calendardata
 
@@ -214,7 +214,6 @@ class Dates:
 
 class HomeTabs:
     def __init__(self, calendar_data):
-        # ✅ this should be the CalendarData *instance* from main.py
         self.calendar_data = calendar_data
 
     def show(self):
