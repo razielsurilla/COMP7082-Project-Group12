@@ -126,7 +126,7 @@ class RecurringComponent:
                 value=self.end_date or '',
                 validation={'Enter a valid date as YYYY-MM-DD':
                             lambda v: True if not (v or '').strip() else _is_date(v)},
-            ).props('outlined dense clearable').classes('w-[200px]')
+            ).props('outlined dense clearable').classes('w-[160px] !pb-0')
 
             # Occurrence count (same row)
             self.ends_count_inp = ui.number(

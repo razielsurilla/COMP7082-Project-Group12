@@ -1,6 +1,9 @@
+# app/pages/home.py
 from nicegui import app, ui
 from datetime import date, timedelta
 import calendar
+
+from app.components import upcoming_events
 from app.sharedVars import SharedVars
 from dbmodule import calendardata
 
@@ -130,7 +133,6 @@ class Calendar:
         self.render_calendar()
 
     def show(self):
-
         months = list(calendar.month_name)[1:]
         years = [str(y) for y in range(self.today.year - 1000, self.today.year + 1000)]
 
@@ -211,17 +213,25 @@ class Dates:
 
 
 class HomeTabs:
+    def __init__(self, calendar_data):
+        self.calendar_data = calendar_data
+
     def show(self):
         calendar_ui = Calendar()
         important_dates_ui = Dates()
+
         with ui.tabs().classes('w-full fixed bottom-0 left-0 h-10') as tabs:
             calendar_tab = ui.tab("Main Calendar")
-            important_dates = ui.tab('Important Dates')
-            upcoming_events = ui.tab('Upcoming Events')
+            important_dates_tab = ui.tab('Important Dates')
+            upcoming_tab = ui.tab('Upcoming Events')
+
         with ui.tab_panels(tabs, value=calendar_tab).classes('w-full p-0').props('animated=False'):
             with ui.tab_panel(calendar_tab).classes('p-0 overflow-hidden'):
                 calendar_ui.show()
-            with ui.tab_panel(important_dates).classes('pl-20'):
+
+            with ui.tab_panel(important_dates_tab).classes('pl-20'):
                 important_dates_ui.show()
-            with ui.tab_panel(upcoming_events).classes('pl-20'):
-                ui.label("Upcoming Events")
+
+            with ui.tab_panel(upcoming_tab).classes('pl-20'):
+                # 🔹 embed upcoming events component, backed by DB
+                upcoming_events.build_upcoming_events(calendar_data=self.calendar_data)
