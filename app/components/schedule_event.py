@@ -65,5 +65,7 @@ class UploadedEventDataFrame:
         self.isRecurringEvent = True
         self.isAlerting = True
 
-        self.recurringEventOptionIndex = 0
+        self.recurringEventOptionIndex = 2
+        self.recurringEventInterval= 1
+
         self.selectedAlertCheckboxes = []        
