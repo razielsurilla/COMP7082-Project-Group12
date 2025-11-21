@@ -7,26 +7,30 @@ load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 def parse_text_to_json(encoded_image, image_type):
-	# there'll be more to this prompt later
-	# need to figure out how the events are stored in the db before one-hot prompting 
 	prompt = """
-	You are an assistant that extracts structured scheduling data from OCR text.
+	You are an assistant that extracts structured scheduling data from an uploaded image.
 	Return **only valid JSON**, no explanations or comments.
 
 	There are should only be four parts to each JSON object, which are the following:
-	1. event
-	2. date
-	3. description
-	4. detail
+	1. event name
+	2. start date
+	3. end date
+	4. description
+	5. recurring (if an event repeats. this is ALWAYS TRUE)
+	6. alerting (if an event should alert the user. this is ALWAYS TRUE)
 
 	Here is an example of a valid JSON object:
 	{
-		"event": "Math Lecture",
-		"date": "1990-12-31",
-		"description": "Math lecture in lecture hall 1205. Taught by John Doe.",
-		"detail": "From 12:30 to 14:30"
+		"event_name": "Math Lecture",
+		"start_date": "1990-12-31",
+		"end_date": "1990-12-31",
+		"day_of_the_week": "Tuesday",
+		"desc": "From 12:30 to 14:30. Math lecture in lecture hall 1205. Taught by John Doe.",
+		"recurring": true,
+		"alerting": true,
 	}
 
+	The fields "recurring" and "alerting" should ALWAYS be true.
 
 	Return only valid JSON, no markdown, comments, or extra text.
 	"""

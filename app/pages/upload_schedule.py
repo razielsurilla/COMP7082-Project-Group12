@@ -2,7 +2,9 @@ from nicegui import events, ui, app
 import asyncio
 import os
 from llmmodule import pipeline
-from app.components.schedule_event import ScheduleEvent
+from dbmodule.sql import Sql
+from dbmodule.calendardata import CalendarData
+from app.components.schedule_event import ScheduleEvent, UploadedEventDataFrame
 
 UPLOAD_DIRECTORY = "uploaded_schedule_files"
 
@@ -16,6 +18,33 @@ class UploadSchedule:
         self.results_container = None
         self.title_label = None
         self.process_button = None
+        self.event_components = []
+
+    async def on_save_clicked(self, e=None):
+        all_data = [comp.get_data() for comp in self.event_components]
+        print("Collected:", all_data)
+        
+        sql_db = Sql()
+        calendar_data = CalendarData(sql_db)
+
+        calendar_data.buildData()
+
+        for item in all_data:
+            df = UploadedEventDataFrame(
+                name=item["event_name"],
+                day=item["day_of_the_week"],
+                desc=item["desc"],
+            )
+            calendar_data.addData(df)
+
+        sql_db.conn.commit()
+        sql_db.terminate()
+        
+        ui.notify("Saved schedule to database!", color="green", position="bottom-right")
+
+        await asyncio.sleep(1.0)
+
+        ui.navigate.to("/")        
 
     async def process_file(self):
         self.card_container.clear()
@@ -40,7 +69,7 @@ class UploadSchedule:
         loop = asyncio.get_running_loop()
         try:
             results = await loop.run_in_executor(
-                None, pipeline.process_image_to_db, file_path, extension
+                None, pipeline.process_image_to_json, file_path, extension
             )
             self.render_results(results)
 
@@ -68,12 +97,21 @@ class UploadSchedule:
             ui.label("Detected Schedule Events").classes(
                 "text-3xl font-bold text-gray-800 mb-6"
             )
+
             with ui.scroll_area().classes("w-full h-[70vh]"):
+                self.event_components = []
                 with ui.grid().classes(
                     "gap-6 grid-cols-1 md:grid-cols-2 w-full max-w-5xl mx-auto"
                 ):
                     for ev in events:
-                        ScheduleEvent(ev).render()
+                        comp = ScheduleEvent(ev)
+                        self.event_components.append(comp)
+                        comp.render()
+
+            with ui.row().classes(
+                "bg-green-500 text-white rounded-full w-10 h-10 mt-4 flex items-center justify-center cursor-pointer"
+            ).on("click", self.on_save_clicked):
+                ui.icon("check").classes("text-xl")
 
     def handle_upload(self, e: events.UploadEventArguments):
         file = e.file

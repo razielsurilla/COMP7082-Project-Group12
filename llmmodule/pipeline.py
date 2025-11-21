@@ -7,7 +7,7 @@ import base64
 	# print(text)
 	# data = parse_text_to_json(text)
 
-def process_image_to_db(image_path, extension):
+def process_image_to_json(image_path, extension):
 	try:
 		with open(image_path, "rb") as image_file:
 			image_bytes = image_file.read()
