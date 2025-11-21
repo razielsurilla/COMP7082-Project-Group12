@@ -121,3 +121,33 @@ class CalendarData:
 		d = {"a": [1, 2, 3]}
 		return d
 
+	def updateEvent(self, old_start_ts, old_end_ts, dataFrame):
+		"""Update a single event identified by its original start/end timestamps."""
+		query = (
+			f"update {Event.TABLE_NAME.value} set "
+			f"{Event.EVENT_NAME.value} = '{dataFrame.eventName}', "
+			f"{Event.START_DATE.value} = {dataFrame.eventStartDate}, "
+			f"{Event.END_DATE.value} = {dataFrame.eventEndDate}, "
+			f"{Event.DESC.value} = '{dataFrame.eventDescription}', "
+			f"{Event.RECURRING.value} = {int(bool(dataFrame.isRecurringEvent))}, "
+			f"{Event.ALERTING.value} = {int(bool(dataFrame.isAlerting))}, "
+			f"{Event.R_OPTION.value} = {int(dataFrame.recurringEventOptionIndex)}, "
+			f"{Event.A_OPTIONS.value} = '{json.dumps(dataFrame.selectedAlertCheckboxes)}' "
+			f"where {Event.START_DATE.value} = {old_start_ts} "
+			f"and {Event.END_DATE.value} = {old_end_ts};"
+		)
+		self.sql.execute(query)
+		self.sql.commit()
+
+
+	def deleteEvent(self, start_ts, end_ts):
+		"""Delete a single event identified by its start/end timestamps."""
+		query = (
+			f"delete from {Event.TABLE_NAME.value} "
+			f"where {Event.START_DATE.value} = {start_ts} "
+			f"and {Event.END_DATE.value} = {end_ts};"
+		)
+		self.sql.execute(query)
+		self.sql.commit()
+
+
