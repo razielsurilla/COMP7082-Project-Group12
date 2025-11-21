@@ -12,13 +12,13 @@ sqlInstance = None
 def home_page():
 	# calendar_ui = home.Calendar()
 	# with_sidebar(calendar_ui.show)
-	home_tabs = home.HomeTabs()
+	home_tabs = home.HomeTabs(calendar_data=calendarData)
 	# home_tabs.show()
 	with_sidebar(home_tabs.show)
 
 @ui.page('/events')
 def events_page():
-	with_sidebar(events.show)
+	with_sidebar(lambda: events.show(calendar_data=calendarData))
 
 @ui.page('/upload')
 def upload_page():
@@ -36,6 +36,7 @@ def add_edit_page():
 def assistant_page():
 #	with_sidebar(None)
     ui.label("TBD")
+
 
 # ---------- MODULE SETUP ----------
 def initModules():
