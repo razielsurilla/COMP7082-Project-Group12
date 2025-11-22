@@ -9,47 +9,6 @@ from app.components.edit_event import open_edit_dialog
 from app.sharedVars import AddEditEventData  # used to create DB records
 
 
-# ----------------------------------------------------
-# DEMO DATA: used when no calendar_data is provided
-#   and also used to SEED the DB when it's empty
-# ----------------------------------------------------
-def _demo_events() -> List[Dict[str, Any]]:
-    return [
-        {
-            'id': 1,
-            'title': 'Morning Standup',
-            'date': '2025-01-08',
-            'start': '9:00 AM',
-            'end': '9:30 AM',
-            'recurring': 'Daily',
-        },
-        {
-            'id': 2,
-            'title': 'Design Review',
-            'date': '2025-01-09',
-            'start': '1:00 PM',
-            'end': '2:00 PM',
-            'recurring': None,
-        },
-        {
-            'id': 3,
-            'title': 'Lab Meeting',
-            'date': '2025-01-10',
-            'start': '10:00 AM',
-            'end': '11:30 AM',
-            'recurring': 'Weekly',
-        },
-        {
-            'id': 4,
-            'title': 'Team Lunch',
-            'date': '2025-02-01',
-            'start': '12:00 PM',
-            'end': '1:00 PM',
-            'recurring': None,
-        },
-    ]
-
-
 def _date_badge(iso_date: str) -> str:
     d = datetime.fromisoformat(iso_date).date()
     return f"{d.strftime('%b').upper()} {d.day}"
@@ -86,23 +45,6 @@ def _parse_date_time(date_str: str, time_str: str) -> float:
     raise ValueError(f"Cannot parse date/time: '{joined}'")
 
 
-def _freq_index_from_text(recurring_text: Optional[str], fallback_idx: int = 0) -> int:
-    """
-    Map human recurring text ('Daily', 'Every 2 Weeks', etc.) to
-    an index: 0=None, 1=Daily, 2=Weekly, 3=Monthly.
-    """
-    if not recurring_text:
-        return fallback_idx
-    t = recurring_text.lower()
-    if 'daily' in t or 'day' in t:
-        return 1
-    if 'weekly' in t or 'week' in t:
-        return 2
-    if 'monthly' in t or 'month' in t:
-        return 3
-    return fallback_idx
-
-
 # --------------------------------------------
 # Main page
 # --------------------------------------------
@@ -119,15 +61,45 @@ def show(calendar_data: Optional[Any] = None) -> None:
         start_dt = datetime.fromtimestamp(df.eventStartDate)
         end_dt = datetime.fromtimestamp(df.eventEndDate)
 
-        date_str = start_dt.strftime('%Y-%m-%d')
+        start_date_str = start_dt.strftime('%Y-%m-%d')
+        end_date_str = end_dt.strftime('%Y-%m-%d')
         start_str = _format_time_12h(start_dt)
         end_str = _format_time_12h(end_dt)
 
-        # Map recurringEventOptionIndex -> label
+        # Frequency index -> label
         idx = int(getattr(df, 'recurringEventOptionIndex', 0) or 0)
         freq_labels = ['None', 'Daily', 'Weekly', 'Monthly']
         freq_label = freq_labels[idx] if 0 <= idx < len(freq_labels) else 'None'
-        recurring_label = None if freq_label == 'None' else freq_label
+
+        # Interval (Every N days/weeks/months)
+        recurring_interval= int(getattr(df, 'recurringInterval', 1) or 1)
+
+        # Human-readable recurring label
+        recurring_label: Optional[str] = None
+        if freq_label != 'None':
+            if recurring_interval <= 1:
+                recurring_label = freq_label
+            else:
+                unit_map = {'Daily': 'day', 'Weekly': 'week', 'Monthly': 'month'}
+                unit = unit_map.get(freq_label, 'time')
+                plural = 's' if recurring_interval != 1 else ''
+                recurring_label = f'Every {recurring_interval} {unit}{plural}'
+
+        # End options from DB
+        end_opt_idx = int(getattr(df, 'recurringEndOptionIndex', 0) or 0)
+
+        raw_end_ts = getattr(df, 'recurringEndDate', None)
+        if isinstance(raw_end_ts, (int, float)) and raw_end_ts > 0:
+            end_date_iso = datetime.fromtimestamp(raw_end_ts).strftime('%Y-%m-%d')
+        else:
+            end_date_iso = None
+
+        end_count = getattr(df, 'recurringEndCount', None)
+        try:
+            if end_count is not None:
+                end_count = int(end_count)
+        except Exception:
+            end_count = None
 
         # Decode JSON from DB if needed
         raw_alert = getattr(df, 'selectedAlertCheckboxes', []) or []
@@ -137,68 +109,41 @@ def show(calendar_data: Optional[Any] = None) -> None:
             except Exception:
                 alert_labels = []
         else:
-            # Ensure it is a list of strings
             alert_labels = [str(x) for x in raw_alert]
 
         ev: Dict[str, Any] = {
             # Use the timestamps as a stable composite identity
             'id': f'{df.eventStartDate}-{df.eventEndDate}',
             'title': df.eventName,
-            'date': date_str,
+            'start_date': start_date_str,
+            'end_date': end_date_str,
             'start': start_str,
             'end': end_str,
             'recurring': recurring_label,
+
             # Hidden fields for DB operations:
             '_start_ts': df.eventStartDate,
             '_end_ts': df.eventEndDate,
+
             # Optional extras
             'description': getattr(df, 'eventDescription', '') or '',
             'is_recurring': bool(getattr(df, 'isRecurringEvent', False)),
             'is_alerting': bool(getattr(df, 'isAlerting', False)),
             'recurring_option_index': idx,
+            'recurring_interval': recurring_interval,
+            'recurring_end_option_index': end_opt_idx,
+            'recurring_end_date': end_date_iso,
+            'recurring_end_count': end_count,
+
             'selectedAlertCheckboxes': alert_labels,
             # For ReminderComponent (used as initial_labels)
             'reminders': alert_labels,
-            # We don't store reminder_minutes in DB yet; ReminderComponent
-            # will infer minutes from the labels.
         }
         return ev
 
-    # --------------------------------------------
-    # Seed demo events into DB if empty
-    # --------------------------------------------
-    def _seed_demo_events_if_empty() -> None:
-        if calendar_data is None:
-            return
-
-        frames = calendar_data.getAllData()
-        if frames:
-            return
-
-        for d in _demo_events():
-            frame = AddEditEventData()
-            frame.eventName = d['title']
-            frame.eventStartDate = _parse_date_time(d['date'], d['start'])
-            frame.eventEndDate = _parse_date_time(d['date'], d['end'])
-            frame.eventDescription = ''
-            # recurrence
-            rec_text = d.get('recurring')
-            idx = _freq_index_from_text(rec_text, 0)
-            frame.isRecurringEvent = bool(idx)
-            frame.recurringEventOptionIndex = idx
-            # reminders / alerting
-            frame.isAlerting = False
-            frame.selectedAlertCheckboxes = []
-
-            calendar_data.addData(frame)
-
     # DB HOOK 1: INITIAL LOAD
-    if calendar_data is None:
-        events: List[Dict[str, Any]] = _demo_events()
-    else:
-        _seed_demo_events_if_empty()
-        frames = calendar_data.getAllData()
-        events = [_from_data_frame(f) for f in frames]
+    frames = calendar_data.getAllData() if calendar_data is not None else []
+    events: List[Dict[str, Any]] = [_from_data_frame(f) for f in frames]
 
     ui.add_head_html('<style>html, body, #app { overflow-x: hidden !important; }</style>')
 
@@ -241,7 +186,7 @@ def show(calendar_data: Optional[Any] = None) -> None:
             for e in events:
                 hay = ' '.join([
                     str(e.get('title', '')),
-                    str(e.get('date', '')),
+                    str(e.get('start_date', '')),
                     str(e.get('start', '')),
                     str(e.get('end', '')),
                     str(e.get('recurring', '')),
@@ -252,7 +197,9 @@ def show(calendar_data: Optional[Any] = None) -> None:
             filtered = events
 
         with container:
-            with ui.element('div').classes('grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center w-full pl-10'):
+            with ui.element('div').classes(
+                'grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center w-full pl-10'
+            ):
                 for evt in filtered:
                     _event_card(evt)
 
@@ -268,12 +215,14 @@ def show(calendar_data: Optional[Any] = None) -> None:
             if old_start_ts is not None and old_end_ts is not None:
                 try:
                     # Build new timestamps
-                    date_str = updated.get('date', '')
+                    start_date_str = updated.get('start_date', '') or updated.get('date', '')
+                    end_date_str = updated.get('end_date', '') or start_date_str
+
                     start_str = updated.get('start', '')
                     end_str = updated.get('end', '')
 
-                    new_start_ts = _parse_date_time(date_str, start_str)
-                    new_end_ts = _parse_date_time(date_str, end_str)
+                    new_start_ts = _parse_date_time(start_date_str, start_str)
+                    new_end_ts = _parse_date_time(end_date_str, end_str)
 
                     # Build new AddEditEventData frame
                     frame = AddEditEventData()
@@ -285,6 +234,32 @@ def show(calendar_data: Optional[Any] = None) -> None:
                     frame.isAlerting = bool(updated.get('is_alerting', False))
                     frame.recurringEventOptionIndex = int(updated.get('recurring_option_index', 0) or 0)
                     frame.selectedAlertCheckboxes = updated.get('selectedAlertCheckboxes', []) or []
+
+                    # Interval (Every N ...)
+                    frame.recurringInterval = int(updated.get('recurring_interval', 1) or 1)
+
+                    # End options
+                    frame.recurringEndOptionIndex = int(
+                        updated.get('recurring_end_option_index', 0) or 0
+                    )
+
+                    end_date_iso = updated.get('recurring_end_date')
+                    if end_date_iso:
+                        try:
+                            dt_end = datetime.strptime(end_date_iso.strip(), '%Y-%m-%d')
+                            frame.recurringEndDate = dt_end.timestamp()
+                        except Exception:
+                            frame.recurringEndDate = None
+                    else:
+                        frame.recurringEndDate = None
+
+                    end_count_val = updated.get('recurring_end_count')
+                    try:
+                        frame.recurringEndCount = (
+                            int(end_count_val) if end_count_val is not None else None
+                        )
+                    except Exception:
+                        frame.recurringEndCount = None
 
                     calendar_data.updateEvent(
                         old_start_ts,     # original keys
@@ -312,7 +287,6 @@ def show(calendar_data: Optional[Any] = None) -> None:
         if calendar_data is not None:
             refresh_from_db()
         refresh()
-
 
     def _remove_event(original: Dict[str, Any]) -> None:
         """Delete"""
@@ -342,12 +316,14 @@ def show(calendar_data: Optional[Any] = None) -> None:
         """New -> Save"""
 
         if calendar_data is not None:
-            date_str = new_ev.get('date', '')
+            start_date_str = new_ev.get('start_date', '') or new_ev.get('date', '')
+            end_date_str = new_ev.get('end_date', '') or start_date_str
+
             start_str = new_ev.get('start', '')
             end_str = new_ev.get('end', '')
 
-            start_ts = _parse_date_time(date_str, start_str)
-            end_ts = _parse_date_time(date_str, end_str)
+            start_ts = _parse_date_time(start_date_str, start_str)
+            end_ts = _parse_date_time(end_date_str, end_str)
 
             frame = AddEditEventData()
             frame.eventName = new_ev.get('title', '') or ''
@@ -358,6 +334,31 @@ def show(calendar_data: Optional[Any] = None) -> None:
             frame.isAlerting = bool(new_ev.get('is_alerting', False))
             frame.recurringEventOptionIndex = int(new_ev.get('recurring_option_index', 0) or 0)
             frame.selectedAlertCheckboxes = new_ev.get('selectedAlertCheckboxes', []) or []
+
+            # Interval + end options from dialog
+            frame.recurringInterval = int(new_ev.get('recurring_interval', 1) or 1)
+
+            frame.recurringEndOptionIndex = int(
+                new_ev.get('recurring_end_option_index', 0) or 0
+            )
+
+            end_date_iso = new_ev.get('recurring_end_date')
+            if end_date_iso:
+                try:
+                    dt_end = datetime.strptime(end_date_iso.strip(), '%Y-%m-%d')
+                    frame.recurringEndDate = dt_end.timestamp()
+                except Exception:
+                    frame.recurringEndDate = None
+            else:
+                frame.recurringEndDate = None
+
+            end_count_val = new_ev.get('recurring_end_count')
+            try:
+                frame.recurringEndCount = (
+                    int(end_count_val) if end_count_val is not None else None
+                )
+            except Exception:
+                frame.recurringEndCount = None
 
             try:
                 calendar_data.addData(frame)
@@ -389,7 +390,7 @@ def show(calendar_data: Optional[Any] = None) -> None:
                 ui.label(evt['title']).classes(
                     'text-body1 text-weight-medium truncate break-words max-w-[240px] md:max-w-[260px]'
                 )
-                ui.label(_date_badge(evt['date'])).classes('text-weight-bold text-grey-7')
+                ui.label(_date_badge(evt['start_date'])).classes('text-weight-bold text-grey-7')
 
             ui.separator().classes('q-my-sm')
 

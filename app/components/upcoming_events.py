@@ -1,6 +1,6 @@
 # app/pages/upcoming_events.py
 from __future__ import annotations
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from typing import List, Dict, Any, Optional
 import json
 
@@ -9,22 +9,22 @@ from app.components.edit_event import open_edit_dialog
 from app.sharedVars import AddEditEventData  # same DTO used in events.py
 
 
-def _demo_events() -> List[Dict[str, Any]]:
-    return [
-        {'id': 1, 'title': 'Morning Standup', 'date': '2025-01-08', 'start': '9:00 AM',  'end': '9:30 AM',  'recurring': 'Daily'},
-        {'id': 2, 'title': 'Design Review',   'date': '2025-01-09', 'start': '1:00 PM',  'end': '2:00 PM',  'recurring': None},
-        {'id': 3, 'title': 'Lab Meeting',     'date': '2025-01-10', 'start': '10:00 AM', 'end': '11:30 AM', 'recurring': 'Weekly'},
-        {'id': 4, 'title': 'Team Lunch',      'date': '2025-02-01', 'start': '12:00 PM', 'end': '1:00 PM',  'recurring': None},
-    ]
-
-
 def _date_badge(iso_date: str) -> str:
     d = datetime.fromisoformat(iso_date).date()
     return f"{d.strftime('%b').upper()} {d.day}"
 
 
+def _format_time_12h(dt: datetime) -> str:
+    """Return times like '9:00 AM' / '1:05 PM' (no leading zero on hour)."""
+    s = dt.strftime('%I:%M %p')  # e.g. '09:00 AM'
+    if s.startswith('0'):
+        s = s[1:]
+    return s
+
+
 def _event_date(evt: Dict[str, Any]) -> Optional[date]:
-    d = evt.get('date')
+    # Prefer start_date, fall back to legacy 'date'
+    d = evt.get('start_date') or evt.get('date')
     if not d:
         return None
     try:
@@ -53,8 +53,7 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
     """
     Component-only builder used inside the Home 'Upcoming Events' tab.
     - Uses DB if calendar_data is provided
-    - Seeds demo events if DB is empty
-    - Shows only next 2 weeks of events (today .. today + 14 days)
+    - Shows only this month's upcoming events (today and later in same month)
     """
 
     # ---- DB row -> UI dict ----
@@ -62,14 +61,45 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
         start_dt = datetime.fromtimestamp(df.eventStartDate)
         end_dt = datetime.fromtimestamp(df.eventEndDate)
 
-        date_str = start_dt.strftime('%Y-%m-%d')
-        start_str = start_dt.strftime('%I:%M %p').lstrip('0')
-        end_str = end_dt.strftime('%I:%M %p').lstrip('0')
+        start_date_str = start_dt.strftime('%Y-%m-%d')
+        end_date_str = end_dt.strftime('%Y-%m-%d')
+        start_str = _format_time_12h(start_dt)
+        end_str = _format_time_12h(end_dt)
 
+        # Frequency index -> label
         idx = int(getattr(df, 'recurringEventOptionIndex', 0) or 0)
         freq_labels = ['None', 'Daily', 'Weekly', 'Monthly']
         freq_label = freq_labels[idx] if 0 <= idx < len(freq_labels) else 'None'
-        recurring_label = None if freq_label == 'None' else freq_label
+
+        # Interval / recurringInterval (for "Every N days/weeks/months")
+        recurring_interval = int(getattr(df, 'recurringInterval', 1) or 1)
+
+        # Human-readable recurring text for UI + RecurringComponent
+        rec_text: Optional[str] = None
+        if freq_label != 'None':
+            if recurring_interval <= 1:
+                rec_text = freq_label  # 'Daily', 'Weekly', 'Monthly'
+            else:
+                unit_map = {'Daily': 'day', 'Weekly': 'week', 'Monthly': 'month'}
+                unit = unit_map.get(freq_label, 'time')
+                plural = 's' if recurring_interval != 1 else ''
+                rec_text = f'Every {recurring_interval} {unit}{plural}'
+
+        # End options from DB
+        end_opt_idx = int(getattr(df, 'recurringEndOptionIndex', 0) or 0)
+
+        raw_end_ts = getattr(df, 'recurringEndDate', None)
+        if isinstance(raw_end_ts, (int, float)) and raw_end_ts > 0:
+            end_date_iso = datetime.fromtimestamp(raw_end_ts).strftime('%Y-%m-%d')
+        else:
+            end_date_iso = None
+
+        end_count = getattr(df, 'recurringEndCount', None)
+        try:
+            if end_count is not None:
+                end_count = int(end_count)
+        except Exception:
+            end_count = None
 
         raw_alert = getattr(df, 'selectedAlertCheckboxes', []) or []
         if isinstance(raw_alert, str):
@@ -83,49 +113,31 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
         return {
             'id': f'{df.eventStartDate}-{df.eventEndDate}',
             'title': df.eventName,
-            'date': date_str,
+            'start_date': start_date_str,
+            'end_date': end_date_str,
             'start': start_str,
             'end': end_str,
-            'recurring': recurring_label,
+            'recurring': rec_text,
             '_start_ts': df.eventStartDate,
             '_end_ts': df.eventEndDate,
             'description': getattr(df, 'eventDescription', '') or '',
             'is_recurring': bool(getattr(df, 'isRecurringEvent', False)),
             'is_alerting': bool(getattr(df, 'isAlerting', False)),
             'recurring_option_index': idx,
+            'recurring_interval': recurring_interval,
+            'recurring_end_option_index': end_opt_idx,
+            'recurring_end_date': end_date_iso,
+            'recurring_end_count': end_count,
             'selectedAlertCheckboxes': alert_labels,
             'reminders': alert_labels,
         }
 
-    # ---- Seed demo events if DB empty ----
-    def _seed_demo_events_if_empty() -> None:
-        if calendar_data is None:
-            return
-        frames = calendar_data.getAllData()
-        if frames:
-            return
-        for d in _demo_events():
-            frame = AddEditEventData()
-            frame.eventName = d['title']
-            frame.eventStartDate = _parse_date_time(d['date'], d['start'])
-            frame.eventEndDate = _parse_date_time(d['date'], d['end'])
-            frame.eventDescription = ''
-            frame.isRecurringEvent = bool(d.get('recurring'))
-            frame.isAlerting = False
-            frame.recurringEventOptionIndex = 0
-            frame.selectedAlertCheckboxes = []
-            calendar_data.addData(frame)
-
     use_db = calendar_data is not None
 
-    if use_db:
-        _seed_demo_events_if_empty()
-        frames = calendar_data.getAllData()
-        events: List[Dict[str, Any]] = [_from_data_frame(f) for f in frames]
-    else:
-        events = _demo_events()
+    frames = calendar_data.getAllData() if use_db else []
+    events: List[Dict[str, Any]] = [_from_data_frame(f) for f in frames]
 
-    # ---- Header (component style, no back button, no bottom bar) ----
+    # ---- Header ----
     with ui.row().classes('items-center justify-between w-full px-4 pt-4'):
         ui.label('Upcoming Events').classes('text-h6 text-weight-bold text-black')
         month_label = ui.label('').classes('text-body2 text-grey-7')
@@ -162,36 +174,33 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
         container.clear()
         base_list: List[Dict[str, Any]] = events
 
+        # default: show everything
+        window_list: List[Dict[str, Any]] = base_list
+
         if use_db:
             now = datetime.now()
             today = now.date()
             now_ts = now.timestamp()
-            window_list: List[Dict[str, Any]] = []
+            window_list = []
 
             for e in base_list:
                 evd = _event_date(e)
                 if evd is None:
                     continue
 
-                # ---------- NEW FIX ----------
-                # Only show events IN THE SAME MONTH that are still upcoming.
+                # Only show events in the current month that are not in the past.
                 if evd.year == today.year and evd.month == today.month:
 
-                    # Case 1: future day this month → always include
+                    # Future day this month
                     if evd > today:
                         window_list.append(e)
                         continue
 
-                    # Case 2: same day → only include if start timestamp is after now
+                    # Same day → only include if start timestamp is after now
                     if evd == today:
                         start_ts = e.get('_start_ts')
                         if isinstance(start_ts, (int, float)) and start_ts >= now_ts:
                             window_list.append(e)
-                # ---------- END FIX ----------
-
-        else:
-            # Demo mode → show all
-            window_list = base_list
 
         # --- Sorting and draw ---
         def sort_key(e: Dict[str, Any]):
@@ -203,7 +212,7 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
 
         with container:
             with ui.element('div').classes(
-                    'grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center w-full pl-0 md:pl-0'
+                'grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center w-full pl-0 md:pl-0'
             ):
                 for evt in window_list:
                     _event_card(evt)
@@ -220,12 +229,16 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
             if old_start_ts is not None and old_end_ts is not None:
                 try:
                     # Build new timestamps
-                    date_str = updated.get('date', '')
+                    start_date_str = (
+                        updated.get('start_date', '') or updated.get('date', '')
+                    )
+                    end_date_str = updated.get('end_date', '') or start_date_str
+
                     start_str = updated.get('start', '')
                     end_str = updated.get('end', '')
 
-                    new_start_ts = _parse_date_time(date_str, start_str)
-                    new_end_ts = _parse_date_time(date_str, end_str)
+                    new_start_ts = _parse_date_time(start_date_str, start_str)
+                    new_end_ts = _parse_date_time(end_date_str, end_str)
 
                     # Build new AddEditEventData frame
                     frame = AddEditEventData()
@@ -233,15 +246,52 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
                     frame.eventStartDate = new_start_ts
                     frame.eventEndDate = new_end_ts
                     frame.eventDescription = updated.get('description', '') or ''
-                    frame.isRecurringEvent = bool(updated.get('is_recurring') or updated.get('recurring'))
+                    frame.isRecurringEvent = bool(
+                        updated.get('is_recurring') or updated.get('recurring')
+                    )
                     frame.isAlerting = bool(updated.get('is_alerting', False))
-                    frame.recurringEventOptionIndex = int(updated.get('recurring_option_index', 0) or 0)
-                    frame.selectedAlertCheckboxes = updated.get('selectedAlertCheckboxes', []) or []
+                    frame.recurringEventOptionIndex = int(
+                        updated.get('recurring_option_index', 0) or 0
+                    )
+                    frame.selectedAlertCheckboxes = (
+                        updated.get('selectedAlertCheckboxes', []) or []
+                    )
+
+                    # interval + end options
+                    frame.recurringInterval = int(
+                        updated.get('recurring_interval', 1) or 1
+                    )
+
+                    frame.recurringEndOptionIndex = int(
+                        updated.get('recurring_end_option_index', 0) or 0
+                    )
+
+                    end_date_iso = updated.get('recurring_end_date')
+                    if end_date_iso:
+                        try:
+                            dt_end = datetime.strptime(
+                                end_date_iso.strip(), '%Y-%m-%d'
+                            )
+                            frame.recurringEndDate = dt_end.timestamp()
+                        except Exception:
+                            frame.recurringEndDate = None
+                    else:
+                        frame.recurringEndDate = None
+
+                    end_count_val = updated.get('recurring_end_count')
+                    try:
+                        frame.recurringEndCount = (
+                            int(end_count_val)
+                            if end_count_val is not None
+                            else None
+                        )
+                    except Exception:
+                        frame.recurringEndCount = None
 
                     calendar_data.updateEvent(
-                        old_start_ts,     # original keys
+                        old_start_ts,  # original keys
                         old_end_ts,
-                        frame             # new data
+                        frame,  # new data
                     )
 
                     # Update UI hidden keys
@@ -250,8 +300,11 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
                     updated['id'] = f'{new_start_ts}-{new_end_ts}'
 
                 except Exception as e:
-                    print(f"[EVENTS] updateEvent error: {e}")
-                    ui.notify('Failed to update event in the database (events).', color='negative')
+                    print(f"[UPCOMING] updateEvent error: {e}")
+                    ui.notify(
+                        'Failed to update event in the database (upcoming_events).',
+                        color='negative',
+                    )
                     return
 
         # Local update
@@ -265,7 +318,6 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
             refresh_from_db()
         refresh()
 
-
     def _remove_event(original: Dict[str, Any]) -> None:
         """Delete"""
 
@@ -277,8 +329,11 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
                 try:
                     calendar_data.deleteEvent(old_start_ts, old_end_ts)
                 except Exception as e:
-                    print(f"[EVENTS] deleteEvent error: {e}")
-                    ui.notify('Error deleting event from database (events).', color='negative')
+                    print(f"[UPCOMING] deleteEvent error: {e}")
+                    ui.notify(
+                        'Error deleting event from database (upcoming_events).',
+                        color='negative',
+                    )
                     return
 
         # Local list sync
@@ -294,27 +349,62 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
         """New -> Save"""
 
         if calendar_data is not None:
-            date_str = new_ev.get('date', '')
+            start_date_str = new_ev.get('start_date', '') or new_ev.get('date', '')
+            end_date_str = new_ev.get('end_date', '') or start_date_str
+
             start_str = new_ev.get('start', '')
             end_str = new_ev.get('end', '')
 
-            start_ts = _parse_date_time(date_str, start_str)
-            end_ts = _parse_date_time(date_str, end_str)
+            start_ts = _parse_date_time(start_date_str, start_str)
+            end_ts = _parse_date_time(end_date_str, end_str)
 
             frame = AddEditEventData()
             frame.eventName = new_ev.get('title', '') or ''
             frame.eventStartDate = start_ts
             frame.eventEndDate = end_ts
             frame.eventDescription = new_ev.get('description', '') or ''
-            frame.isRecurringEvent = bool(new_ev.get('is_recurring') or new_ev.get('recurring'))
+            frame.isRecurringEvent = bool(
+                new_ev.get('is_recurring') or new_ev.get('recurring')
+            )
             frame.isAlerting = bool(new_ev.get('is_alerting', False))
-            frame.recurringEventOptionIndex = int(new_ev.get('recurring_option_index', 0) or 0)
-            frame.selectedAlertCheckboxes = new_ev.get('selectedAlertCheckboxes', []) or []
+            frame.recurringEventOptionIndex = int(
+                new_ev.get('recurring_option_index', 0) or 0
+            )
+            frame.selectedAlertCheckboxes = (
+                new_ev.get('selectedAlertCheckboxes', []) or []
+            )
+
+            # interval + end options
+            frame.recurringInterval = int(
+                new_ev.get('recurring_interval', 1) or 1
+            )
+
+            frame.recurringEndOptionIndex = int(
+                new_ev.get('recurring_end_option_index', 0) or 0
+            )
+
+            end_date_iso = new_ev.get('recurring_end_date')
+            if end_date_iso:
+                try:
+                    dt_end = datetime.strptime(end_date_iso.strip(), '%Y-%m-%d')
+                    frame.recurringEndDate = dt_end.timestamp()
+                except Exception:
+                    frame.recurringEndDate = None
+            else:
+                frame.recurringEndDate = None
+
+            end_count_val = new_ev.get('recurring_end_count')
+            try:
+                frame.recurringEndCount = (
+                    int(end_count_val) if end_count_val is not None else None
+                )
+            except Exception:
+                frame.recurringEndCount = None
 
             try:
                 calendar_data.addData(frame)
             except Exception as e:
-                print(f"[EVENTS] DB create error: {e}")
+                print(f"[UPCOMING] DB create error: {e}")
                 ui.notify('Error saving new event to database.', color='negative')
                 return
 
@@ -337,14 +427,21 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
         ):
             with ui.row().classes('items-start justify-between w-full min-w-0'):
                 ui.label(evt['title']).classes(
-                    'text-body1 text-weight-medium truncate break-words max-w-[240px] md:max-w-[260px]'
+                    'text-body1 text-weight-medium truncate break-words '
+                    'max-w-[240px] md:max-w-[260px]'
                 )
-                ui.label(_date_badge(evt['date'])).classes('text-weight-bold text-grey-7')
+                ui.label(_date_badge(evt['start_date'])).classes(
+                    'text-weight-bold text-grey-7'
+                )
 
             ui.separator().classes('q-my-sm')
 
-            with ui.row().classes('items-center justify-between text-grey-8 text-caption w-full min-w-0'):
-                ui.label(f"{evt.get('start','')} to {evt.get('end','')}").classes('truncate')
+            with ui.row().classes(
+                'items-center justify-between text-grey-8 text-caption w-full min-w-0'
+            ):
+                ui.label(f"{evt.get('start','')} to {evt.get('end','')}").classes(
+                    'truncate'
+                )
                 if evt.get('recurring'):
                     with ui.row().classes('items-center gap-1 min-w-0'):
                         ui.icon('autorenew').classes('text-[16px]')
@@ -353,15 +450,21 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
             ui.separator().classes('q-my-sm')
 
             with ui.row().classes('items-center justify-around text-grey-7'):
-                ui.icon('edit_note').classes('cursor-pointer hover:text-primary').on(
+                ui.icon('edit_note').classes(
+                    'cursor-pointer hover:text-primary'
+                ).on(
                     'click',
                     lambda _=None, ev=evt: open_edit_dialog(
                         ev,
-                        on_save=lambda updated, original=ev: _update_event(original, updated),
+                        on_save=lambda updated, original=ev: _update_event(
+                            original, updated
+                        ),
                         on_delete=lambda original=ev: _remove_event(original),
-                    )
+                    ),
                 )
-                ui.icon('delete').classes('cursor-pointer hover:text-negative').on(
+                ui.icon('delete').classes(
+                    'cursor-pointer hover:text-negative'
+                ).on(
                     'click', lambda _=None, original=evt: _remove_event(original)
                 )
 
