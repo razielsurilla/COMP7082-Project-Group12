@@ -38,19 +38,28 @@ def _parse_recurring_text(text: Optional[str]) -> Tuple[str, int]:
     t = text.strip().lower()
     if t in ('daily', 'weekly', 'monthly'):
         return t.capitalize(), 1
+
     m = re.search(r'\bevery\s+(\d+)\s+(day|days)\b', t)
     if m:
         return 'Daily', max(1, int(m.group(1)))
+
     m = re.search(r'\bevery\s+(\d+)\s+(week|weeks)\b', t)
     if m:
         return 'Weekly', max(1, int(m.group(1)))
+
     m = re.search(r'\bevery\s+(\d+)\s+(month|months)\b', t)
     if m:
         return 'Monthly', max(1, int(m.group(1)))
+
     return 'None', 1
 
 
-def _recurring_human(freq_label: str, interval: int, until: Optional[str] = None, count: Optional[int] = None) -> Optional[str]:
+def _recurring_human(
+    freq_label: str,
+    interval: int,
+    until: Optional[str] = None,
+    count: Optional[int] = None,
+) -> Optional[str]:
     """Convert recurrence structure to human-readable text."""
     if freq_label == 'None':
         return None
@@ -67,26 +76,53 @@ def _recurring_human(freq_label: str, interval: int, until: Optional[str] = None
 class RecurringComponent:
     def __init__(self, original: Optional[Dict[str, Any]] = None) -> None:
         original = original or {}
+
+        # 1) Frequency + interval from human text (e.g. "Daily", "Every 2 weeks")
         self.freq_label, self.interval = _parse_recurring_text(original.get('recurring'))
+
+        # 2) Structured recurrence definition (old style)
         self.rec_struct = original.get('recurrence') or {}
 
+        # End-condition fields (UI state)
         self.end_kind = 'Never'
         self.end_date: Optional[str] = None
         self.end_count: Optional[int] = None
 
-        if isinstance(self.rec_struct, dict):
+        used_struct = False
+
+        # Prefer existing recurrence struct if it exists
+        if isinstance(self.rec_struct, dict) and self.rec_struct:
             u = _to_iso_date_str(self.rec_struct.get('until'))
             if u:
                 self.end_kind, self.end_date = 'On date', u
+                used_struct = True
             else:
                 try:
                     c = int(self.rec_struct.get('count') or 0)
                     if c > 0:
                         self.end_kind, self.end_count = 'After occurrences', c
+                        used_struct = True
                 except Exception:
                     pass
 
-        # UI elements (placeholders)
+        # 3) If no struct or no end info, fall back to DB-style fields
+        if not used_struct:
+            end_opt = int(original.get('recurring_end_option_index') or 0)
+            if end_opt == 1:
+                self.end_kind = 'On date'
+                self.end_date = _to_iso_date_str(original.get('recurring_end_date'))
+            elif end_opt == 2:
+                self.end_kind = 'After occurrences'
+                try:
+                    c = int(original.get('recurring_end_count') or 0)
+                    if c > 0:
+                        self.end_count = c
+                except Exception:
+                    pass
+            else:
+                self.end_kind = 'Never'
+
+        # UI elements (placeholders, set in build())
         self.recurring_sel: Optional[ui.select] = None
         self.interval_inp: Optional[ui.number] = None
         self.ends_row: Optional[ui.row] = None
@@ -103,13 +139,14 @@ class RecurringComponent:
             self.recurring_sel = ui.select(
                 options=FREQ_LABELS,
                 value=self.freq_label,
-                label='Frequency'
+                label='Frequency',
             ).props('outlined dense').classes('min-w-[160px]')
 
             self.interval_inp = ui.number(
                 label='Every … (interval)',
                 value=self.interval,
-                min=1, max=365
+                min=1,
+                max=365,
             ).props('outlined dense').classes('w-[160px]')
 
         # Row 2: Ends + On date + Occurrences (all aligned)
@@ -117,44 +154,71 @@ class RecurringComponent:
             self.ends_sel = ui.select(
                 options=END_KIND_LABELS,
                 value=self.end_kind,
-                label='Ends'
+                label='Ends',
             ).props('outlined dense').classes('min-w-[160px]')
 
             # End date input (same row)
             self.ends_date_inp = ui.input(
                 label='End date (YYYY-MM-DD)',
                 value=self.end_date or '',
-                validation={'Enter a valid date as YYYY-MM-DD':
-                            lambda v: True if not (v or '').strip() else _is_date(v)},
+                validation={
+                    'Enter a valid date as YYYY-MM-DD': (
+                        lambda v: True if not (v or '').strip() else _is_date(v)
+                    )
+                },
             ).props('outlined dense clearable').classes('w-[160px] !pb-0')
 
             # Occurrence count (same row)
             self.ends_count_inp = ui.number(
                 label='Occurrences',
                 value=self.end_count if self.end_count is not None else None,
-                min=1, max=10000,
+                min=1,
+                max=10000,
             ).props('outlined dense').classes('w-[160px]')
 
         # Reactive visibility bindings
-        self.interval_inp.bind_enabled_from(self.recurring_sel, 'value',
-                                            backward=lambda v: v != 'None')
-        self.ends_row.bind_visibility_from(self.recurring_sel, 'value',
-                                           backward=lambda v: v != 'None')
-        self.ends_date_inp.bind_visibility_from(self.ends_sel, 'value',
-                                                backward=lambda v: v == 'On date')
-        self.ends_count_inp.bind_visibility_from(self.ends_sel, 'value',
-                                                 backward=lambda v: v == 'After occurrences')
+        self.interval_inp.bind_enabled_from(
+            self.recurring_sel,
+            'value',
+            backward=lambda v: v != 'None',
+        )
+        self.ends_row.bind_visibility_from(
+            self.recurring_sel,
+            'value',
+            backward=lambda v: v != 'None',
+        )
+        self.ends_date_inp.bind_visibility_from(
+            self.ends_sel,
+            'value',
+            backward=lambda v: v == 'On date',
+        )
+        self.ends_count_inp.bind_visibility_from(
+            self.ends_sel,
+            'value',
+            backward=lambda v: v == 'After occurrences',
+        )
 
     # ----- Getters -----
     def get_values(self) -> Tuple[str, int, Optional[str], Optional[int]]:
+        """
+        Returns:
+            freq_label: 'None' | 'Daily' | 'Weekly' | 'Monthly'
+            interval: int >= 1
+            until_iso: 'YYYY-MM-DD' or None
+            count_val: int or None
+        """
         freq = (self.recurring_sel.value if self.recurring_sel else self.freq_label) or 'None'
         interval = int(self.interval_inp.value or 0) if self.interval_inp else self.interval
         kind = (self.ends_sel.value if self.ends_sel else self.end_kind) or 'Never'
-        until_iso = None
-        count_val = None
+        until_iso: Optional[str] = None
+        count_val: Optional[int] = None
 
         if freq != 'None':
-            if kind == 'On date' and self.ends_date_inp and _is_date(self.ends_date_inp.value or ''):
+            if (
+                kind == 'On date'
+                and self.ends_date_inp
+                and _is_date(self.ends_date_inp.value or '')
+            ):
                 until_iso = (self.ends_date_inp.value or '').strip()
             elif kind == 'After occurrences' and self.ends_count_inp:
                 try:
@@ -163,16 +227,29 @@ class RecurringComponent:
                         count_val = c
                 except Exception:
                     pass
+
         return freq, interval, until_iso, count_val
 
     def get_human_and_struct(self) -> Tuple[Optional[str], Optional[Dict[str, Any]]]:
+        """
+        Returns:
+            human: e.g. 'Daily', 'Every 2 Weeks until 2025-02-10', or None
+            struct: e.g. {'freq': 'WEEKLY', 'interval': 2, 'until': '2025-02-10'}
+                    or None if no recurrence
+        """
         freq, interval, until_iso, count_val = self.get_values()
         if freq == 'None' or interval < 1:
             return None, None
+
         human = _recurring_human(freq, interval, until=until_iso, count=count_val)
-        struct: Dict[str, Any] = {'freq': FREQ_TO_RRULE[freq], 'interval': interval}
+
+        struct: Dict[str, Any] = {
+            'freq': FREQ_TO_RRULE[freq],
+            'interval': interval,
+        }
         if until_iso:
             struct['until'] = until_iso
         if count_val:
             struct['count'] = count_val
+
         return human, struct

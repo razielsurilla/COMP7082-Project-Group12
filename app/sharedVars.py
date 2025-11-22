@@ -9,7 +9,7 @@ class SharedVars:
 		self.ADDEDIT_DATA_KEY = 'addEditData'
 		self.DATA_DEFAULT_VALUE = 'No data'
 		return None
-	
+
 @dataclass
 class AddEditEventData:
 	eventName: str = "dummy"
@@ -20,8 +20,10 @@ class AddEditEventData:
 	isAlerting: bool = False
 	recurringEventOptionIndex: int = 0
 	selectedAlertCheckboxes: List[int] = field(default_factory=list)
-	recurringDays: int = 0
-	recurringEndDate: float = 0
+	recurringInterval: int = 0
+	recurringEndOptionIndex: int = 0
+	recurringEndDate: float | None = None
+	recurringEndCount: int | None = None
 
 @dataclass
 class EventDateTime:

@@ -1,7 +1,7 @@
 from nicegui import ui
 
-def datePickerLabel(labelName, clickEvent):
-	with ui.input(labelName, on_change=clickEvent) as date:
+def datePickerLabel(labelName, clickEvent, value: str = ''):
+	with ui.input(labelName, value=value or '', on_change=clickEvent) as date:
 		with ui.menu().props('no-parent-event') as menu:
 			with ui.date().bind_value(date):
 				with ui.row().classes('justify-end'):
@@ -10,8 +10,8 @@ def datePickerLabel(labelName, clickEvent):
 		ui.icon('edit_calendar').on('click', menu.open).classes('cursor-pointer')
 	return date
 
-def timePickerLabel(labelName, clickEvent):
-	with ui.input(labelName, on_change=clickEvent) as time:
+def timePickerLabel(labelName, clickEvent, value: str = ''):
+	with ui.input(labelName, value=value or '', on_change=clickEvent) as time:
 		with ui.menu().props('no-parent-event') as menu:
 			with ui.time().bind_value(time):
 				with ui.row().classes('justify-end'):

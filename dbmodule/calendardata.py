@@ -6,157 +6,236 @@ from app.sharedVars import AddEditEventData
 # data tables
 class Event(Enum):
     TABLE_NAME = "events"
+
     EVENT_NAME = "name"
     START_DATE = "start_date"
     END_DATE = "end_date"
     DESC = "description"
+
     RECURRING = "is_recurring"
     ALERTING = "is_alerting"
-    R_OPTION = "recurring_option"
-    A_OPTIONS = "alerting_options"
-    R_DAYS = "recurring_days"
-    R_END_DATE = "recurring_end_date"
+
+    R_OPTION = "recurring_option"          # daily / weekly / monthly index
+    A_OPTIONS = "alerting_options"         # JSON text of alert checkboxes
+    R_INTERVAL = "recurring_interval"              # e.g. every N days / week pattern
+
+    # End options:
+    # 0 = never ends
+    # 1 = ends on specific date (see R_END_DATE)
+    # 2 = ends after X occurrences (see R_END_COUNT)
+    R_END_OPTIONS = "recurring_end_options"
+    R_END_DATE = "recurring_end_date"      # REAL (timestamp) or NULL
+    R_END_COUNT = "recurring_end_count"    # INTEGER or NULL
 
 class CalendarData:
-	def __init__(self, sqlInstance):
-		self.sql = sqlInstance
-		return None
-	
-	def buildData(self):
-		query = (f"create table if not exists {Event.TABLE_NAME.value}"
-		f"({Event.EVENT_NAME.value} TEXT,"
-		f"{Event.START_DATE.value} REAL NOT NULL,"
-		f"{Event.END_DATE.value} REAL NOT NULL,"
-		f"{Event.DESC.value} TEXT,"
-		f"{Event.RECURRING.value} BOOLEAN,"
-		f"{Event.ALERTING.value} BOOLEAN,"
-		f"{Event.R_OPTION.value} INT,"
-		f"{Event.A_OPTIONS.value} TEXT,"
-		f"{Event.R_DAYS.value} INT,"
-		f"{Event.R_END_DATE.value} REAL NOT NULL,"
-		f"PRIMARY kEY ({Event.START_DATE.value}, {Event.END_DATE.value})"
-		f");")
-		
-		self.sql.execute(query)
-		return None
-	
-	# don't execute this unless needed
-	def deleteData(self):
-		query = (f"drop table if exists {Event.TABLE_NAME.value};")
-		
-		self.sql.execute(query)
-		return None
-	
-	def verifyData(self):
-		query = (f"PRAGMA table_info({Event.TABLE_NAME.value});")
-		
-		self.sql.execute(query)
-		self.printQueryData()
-		return None
-	
-	def printQueryData(self):
-		rows = self.sql.fetchall()
-		print("number of rows fetched: ", len(rows))
-		for row in rows:
-			print(row)
-	
-	def getAllData(self):
-		query = (f"select * from {Event.TABLE_NAME.value};")
-		self.sql.execute(query)
-		
-		rows = self.sql.fetchall()
-		rowCount = len(rows)
-		dataList = []
-		if rowCount > 0:
-			for i in range(rowCount):
-				dataFrame = AddEditEventData()
-				dataFrame.eventName = rows[i][0]
-				dataFrame.eventStartDate = rows[i][1]
-				dataFrame.eventEndDate = rows[i][2]
-				dataFrame.eventDescription = rows[i][3]
-				dataFrame.isRecurringEvent = rows[i][4]
-				dataFrame.isAlerting = rows[i][5]
-				dataFrame.recurringEventOptionIndex = rows[i][6]
-				dataFrame.selectedAlertCheckboxes = rows[i][7]
-				dataFrame.recurringDays = rows[i][8]
-				dataFrame.recurringEndDate = rows[i][9]
-				dataList.append(dataFrame)
-		#print(dataList)
-		return dataList
-	
-	def addData(self, dataFrame):
-		query = (f"insert into {Event.TABLE_NAME.value} "
-		f"({Event.EVENT_NAME.value}, {Event.START_DATE.value}, {Event.END_DATE.value}, {Event.DESC.value},"
-		f"{Event.RECURRING.value}, {Event.ALERTING.value}, {Event.R_OPTION.value}, {Event.A_OPTIONS.value},"
-		f"{Event.R_DAYS.value}, {Event.R_END_DATE.value})"
-		f"values ('{dataFrame.eventName}', {dataFrame.eventStartDate}, {dataFrame.eventEndDate}, "
-		f"'{dataFrame.eventDescription}', {dataFrame.isRecurringEvent}, {dataFrame.isAlerting}, "
-		f"{dataFrame.recurringEventOptionIndex}, '{json.dumps(dataFrame.selectedAlertCheckboxes)} ', "
-		f"{dataFrame.recurringDays}, {dataFrame.recurringEndDate} "
-		f");")
-		
-		self.sql.execute(query)
-		self.sql.commit()
-		#self.printAllData()
-		return None
+    def __init__(self, sqlInstance):
+        self.sql = sqlInstance
 
-	def printAllData(self):
-		query = (f"select * from {Event.TABLE_NAME.value};")
-		
-		self.sql.execute(query)
-		self.printQueryData()
-		return None
-	
-	def getDateFromTimestamp(self, timestamp):
-		dateObj = datetime.fromtimestamp(timestamp)
-		return dateObj
+    def buildData(self):
+        # NOTE: if the table already exists, you'll need ALTER TABLE commands instead.
+        query = (
+            f"CREATE TABLE IF NOT EXISTS {Event.TABLE_NAME.value} ("
+            f"{Event.EVENT_NAME.value} TEXT,"
+            f"{Event.START_DATE.value} REAL NOT NULL,"
+            f"{Event.END_DATE.value} REAL NOT NULL,"
+            f"{Event.DESC.value} TEXT,"
+            f"{Event.RECURRING.value} BOOLEAN,"
+            f"{Event.ALERTING.value} BOOLEAN,"
+            f"{Event.R_OPTION.value} INT,"
+            f"{Event.A_OPTIONS.value} TEXT,"
+            f"{Event.R_INTERVAL.value} INT,"
+            f"{Event.R_END_OPTIONS.value} INT DEFAULT 0,"       # 0 = never
+            f"{Event.R_END_DATE.value} REAL,"                   # nullable
+            f"{Event.R_END_COUNT.value} INT,"                   # nullable
+            f"PRIMARY KEY ({Event.START_DATE.value}, {Event.END_DATE.value})"
+            f");"
+        )
+        self.sql.execute(query)
 
-	def findEventsInRangeMainCal(self, rangeMin, rangeMax):
-		query = (f"select * from {Event.TABLE_NAME.value} where {Event.START_DATE.value} between {rangeMin} and {rangeMax};")
-		self.sql.execute(query)
-		#self.printAllData()
-		fetchedData = self.sql.fetchall()
-		numFetchedDataRows = len(fetchedData)
-		#TODO: SORT VALUES INTO DICTIONARY FORM, key: day, value: list[events]
-		d = {"a": [1, 2, 3]}
-		return d
+    # don't execute this unless needed
+    def deleteData(self):
+        query = f"DROP TABLE IF EXISTS {Event.TABLE_NAME.value};"
+        self.sql.execute(query)
 
-	def findEventsInRangeImpDate(self, oldDate, newDate):
-		query = (f"select * from {Event.TABLE_NAME.value} where {Event.START_DATE.value} between {oldDate} and {newDate};")
-		#self.sql.execute(query)
-		#TODO: SORT VALUES INTO DICTIONARY FORM, key: day, value: list[events]
-		d = {"a": [1, 2, 3]}
-		return d
+    def verifyData(self):
+        query = f"PRAGMA table_info({Event.TABLE_NAME.value});"
+        self.sql.execute(query)
+        self.printQueryData()
 
-	def updateEvent(self, old_start_ts, old_end_ts, dataFrame):
-		"""Update a single event identified by its original start/end timestamps."""
-		query = (
-			f"update {Event.TABLE_NAME.value} set "
-			f"{Event.EVENT_NAME.value} = '{dataFrame.eventName}', "
-			f"{Event.START_DATE.value} = {dataFrame.eventStartDate}, "
-			f"{Event.END_DATE.value} = {dataFrame.eventEndDate}, "
-			f"{Event.DESC.value} = '{dataFrame.eventDescription}', "
-			f"{Event.RECURRING.value} = {int(bool(dataFrame.isRecurringEvent))}, "
-			f"{Event.ALERTING.value} = {int(bool(dataFrame.isAlerting))}, "
-			f"{Event.R_OPTION.value} = {int(dataFrame.recurringEventOptionIndex)}, "
-			f"{Event.A_OPTIONS.value} = '{json.dumps(dataFrame.selectedAlertCheckboxes)}, ' "
-			f"{Event.R_DAYS.value} = {dataFrame.recurringDays}, "
-			f"{Event.R_END_DATE.value} = {dataFrame.recurringEndDate} "
-			f"where {Event.START_DATE.value} = {old_start_ts} "
-			f"and {Event.END_DATE.value} = {old_end_ts};"
-		)
-		self.sql.execute(query)
-		self.sql.commit()
+    def printQueryData(self):
+        rows = self.sql.fetchall()
+        print("number of rows fetched: ", len(rows))
+        for row in rows:
+            print(row)
 
+    def getAllData(self):
+        query = f"SELECT * FROM {Event.TABLE_NAME.value};"
+        self.sql.execute(query)
 
-	def deleteEvent(self, start_ts, end_ts):
-		"""Delete a single event identified by its start/end timestamps."""
-		query = (
-			f"delete from {Event.TABLE_NAME.value} "
-			f"where {Event.START_DATE.value} = {start_ts} "
-			f"and {Event.END_DATE.value} = {end_ts};"
-		)
-		self.sql.execute(query)
-		self.sql.commit()
+        rows = self.sql.fetchall()
+        rowCount = len(rows)
+        dataList = []
 
+        # Expected column order (matching buildData):
+        # 0  name
+        # 1  start_date
+        # 2  end_date
+        # 3  description
+        # 4  is_recurring
+        # 5  is_alerting
+        # 6  recurring_option
+        # 7  alerting_options (JSON text)
+        # 8  recurring_interval
+        # 9  recurring_end_options
+        # 10 recurring_end_date
+        # 11 recurring_end_count
 
+        if rowCount > 0:
+            for i in range(rowCount):
+                row = rows[i]
+                dataFrame = AddEditEventData()
+
+                dataFrame.eventName = row[0]
+                dataFrame.eventStartDate = row[1]
+                dataFrame.eventEndDate = row[2]
+                dataFrame.eventDescription = row[3]
+                dataFrame.isRecurringEvent = row[4]
+                dataFrame.isAlerting = row[5]
+                dataFrame.recurringEventOptionIndex = row[6]
+
+                # alert options as JSON list, if present
+                try:
+                    dataFrame.selectedAlertCheckboxes = (
+                        json.loads(row[7]) if row[7] else []
+                    )
+                except Exception:
+                    dataFrame.selectedAlertCheckboxes = []
+
+                dataFrame.recurringInterval = row[8]
+                dataFrame.recurringEndOptionIndex = row[9]      # NEW: 0/1/2
+                dataFrame.recurringEndDate = row[10]            # timestamp or None
+                dataFrame.recurringEndCount = row[11]           # int or None
+
+                dataList.append(dataFrame)
+
+        return dataList
+
+    def addData(self, dataFrame):
+        # Convert Python None → SQL NULL for nullable fields
+        end_opt = int(getattr(dataFrame, "recurringEndOptionIndex", 0) or 0)
+
+        # timestamps or None
+        end_date = getattr(dataFrame, "recurringEndDate", None)
+        end_date_sql = "NULL" if end_date is None else str(end_date)
+
+        end_count = getattr(dataFrame, "recurringEndCount", None)
+        end_count_sql = "NULL" if end_count is None else str(int(end_count))
+
+        alert_json = json.dumps(getattr(dataFrame, "selectedAlertCheckboxes", []))
+
+        query = (
+            f"INSERT INTO {Event.TABLE_NAME.value} ("
+            f"{Event.EVENT_NAME.value}, "
+            f"{Event.START_DATE.value}, "
+            f"{Event.END_DATE.value}, "
+            f"{Event.DESC.value}, "
+            f"{Event.RECURRING.value}, "
+            f"{Event.ALERTING.value}, "
+            f"{Event.R_OPTION.value}, "
+            f"{Event.A_OPTIONS.value}, "
+            f"{Event.R_INTERVAL.value}, "
+            f"{Event.R_END_OPTIONS.value}, "
+            f"{Event.R_END_DATE.value}, "
+            f"{Event.R_END_COUNT.value}"
+            f") VALUES ("
+            f"'{dataFrame.eventName}', "
+            f"{dataFrame.eventStartDate}, "
+            f"{dataFrame.eventEndDate}, "
+            f"'{dataFrame.eventDescription}', "
+            f"{int(bool(dataFrame.isRecurringEvent))}, "
+            f"{int(bool(dataFrame.isAlerting))}, "
+            f"{int(dataFrame.recurringEventOptionIndex)}, "
+            f"'{alert_json}', "
+            f"{dataFrame.recurringInterval}, "
+            f"{end_opt}, "
+            f"{end_date_sql}, "
+            f"{end_count_sql}"
+            f");"
+        )
+
+        self.sql.execute(query)
+        self.sql.commit()
+
+    def printAllData(self):
+        query = f"SELECT * FROM {Event.TABLE_NAME.value};"
+        self.sql.execute(query)
+        self.printQueryData()
+
+    def getDateFromTimestamp(self, timestamp):
+        dateObj = datetime.fromtimestamp(timestamp)
+        return dateObj
+
+    def findEventsInRangeMainCal(self, rangeMin, rangeMax):
+        query = (
+            f"SELECT * FROM {Event.TABLE_NAME.value} "
+            f"WHERE {Event.START_DATE.value} BETWEEN {rangeMin} AND {rangeMax};"
+        )
+        self.sql.execute(query)
+        fetchedData = self.sql.fetchall()
+        numFetchedDataRows = len(fetchedData)
+        # TODO: SORT VALUES INTO DICTIONARY FORM, key: day, value: list[events]
+        d = {"a": [1, 2, 3]}
+        return d
+
+    def findEventsInRangeImpDate(self, oldDate, newDate):
+        query = (
+            f"SELECT * FROM {Event.TABLE_NAME.value} "
+            f"WHERE {Event.START_DATE.value} BETWEEN {oldDate} AND {newDate};"
+        )
+        # self.sql.execute(query)
+        # TODO: SORT VALUES INTO DICTIONARY FORM, key: day, value: list[events]
+        d = {"a": [1, 2, 3]}
+        return d
+
+    def updateEvent(self, old_start_ts, old_end_ts, dataFrame):
+        """Update a single event identified by its original start/end timestamps."""
+        end_opt = int(getattr(dataFrame, "recurringEndOptionIndex", 0) or 0)
+
+        end_date = getattr(dataFrame, "recurringEndDate", None)
+        end_date_sql = "NULL" if end_date is None else str(end_date)
+
+        end_count = getattr(dataFrame, "recurringEndCount", None)
+        end_count_sql = "NULL" if end_count is None else str(int(end_count))
+
+        alert_json = json.dumps(getattr(dataFrame, "selectedAlertCheckboxes", []))
+
+        query = (
+            f"UPDATE {Event.TABLE_NAME.value} SET "
+            f"{Event.EVENT_NAME.value} = '{dataFrame.eventName}', "
+            f"{Event.START_DATE.value} = {dataFrame.eventStartDate}, "
+            f"{Event.END_DATE.value} = {dataFrame.eventEndDate}, "
+            f"{Event.DESC.value} = '{dataFrame.eventDescription}', "
+            f"{Event.RECURRING.value} = {int(bool(dataFrame.isRecurringEvent))}, "
+            f"{Event.ALERTING.value} = {int(bool(dataFrame.isAlerting))}, "
+            f"{Event.R_OPTION.value} = {int(dataFrame.recurringEventOptionIndex)}, "
+            f"{Event.A_OPTIONS.value} = '{alert_json}', "
+            f"{Event.R_INTERVAL.value} = {dataFrame.recurringInterval}, "
+            f"{Event.R_END_OPTIONS.value} = {end_opt}, "
+            f"{Event.R_END_DATE.value} = {end_date_sql}, "
+            f"{Event.R_END_COUNT.value} = {end_count_sql} "
+            f"WHERE {Event.START_DATE.value} = {old_start_ts} "
+            f"AND {Event.END_DATE.value} = {old_end_ts};"
+        )
+
+        self.sql.execute(query)
+        self.sql.commit()
+
+    def deleteEvent(self, start_ts, end_ts):
+        """Delete a single event identified by its start/end timestamps."""
+        query = (
+            f"DELETE FROM {Event.TABLE_NAME.value} "
+            f"WHERE {Event.START_DATE.value} = {start_ts} "
+            f"AND {Event.END_DATE.value} = {end_ts};"
+        )
+        self.sql.execute(query)
+        self.sql.commit()

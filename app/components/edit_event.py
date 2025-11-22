@@ -6,6 +6,8 @@ from nicegui import ui
 
 from .reminder_event import ReminderComponent
 from .recurring_event import RecurringComponent
+from .addedit import datePickerLabel, timePickerLabel
+
 
 _TIME_FORMATS = ['%H:%M', '%H:%M:%S', '%I:%M %p', '%I %p', '%I:%M%p', '%I%p']
 
@@ -91,22 +93,29 @@ def open_edit_dialog(
 ) -> None:
     """Compose Event + Recurrence + Reminders into a single dialog."""
     original = event or {}
+
+    # Prefer 'start_date', fall back to legacy 'date'
     title_val = original.get('title', '') or ''
-    date_val = original.get('date', '') or ''
+    start_date_val = original.get('start_date') or original.get('date') or ''
+    end_date_val = original.get('end_date', '') or ''
     start_val = original.get('start', '') or ''
     end_val = original.get('end', '') or ''
     desc_val = original.get('description', '') or ''
 
     reminder_comp = ReminderComponent(
-        initial_minutes=original.get('reminder_minutes') if isinstance(original.get('reminder_minutes'), list) else None,
-        initial_labels=original.get('reminders') if isinstance(original.get('reminders'), list) else None,
+        initial_minutes=original.get('reminder_minutes')
+        if isinstance(original.get('reminder_minutes'), list) else None,
+        initial_labels=original.get('reminders')
+        if isinstance(original.get('reminders'), list) else None,
     )
     recurring_comp = RecurringComponent(original)
 
     dialog = ui.dialog()
     with dialog, ui.card().classes('w-[min(92vw,600px)] max-w-full max-h-[85vh] relative'):
         with ui.column().classes('items-center w-full q-gutter-sm'):
-            ui.label('Edit Event' if event else 'New Event').classes('text-h6 text-weight-bold q-mb-sm')
+            ui.label('Edit Event' if event else 'New Event').classes(
+                'text-h6 text-weight-bold q-mb-sm'
+            )
             field_w = 'w-[92%] max-w-[460px]'
 
             # --- Base Event Info ---
@@ -116,33 +125,18 @@ def open_edit_dialog(
                 validation={
                     'Title is required (e.g., "Lab meeting")': _is_nonempty
                 },
-            ).props('outlined dense clearable').classes(field_w)
+            ).props('outlined dense clearable').classes(f'{field_w} pb-0')
 
-            # Native date picker
-            date_inp = ui.input(
-                'Date',
-                value=(date_val or '').strip(),
-                validation={
-                    'Please select a valid date (YYYY-MM-DD).': _is_date
-                },
-            ).props('outlined dense clearable type=date').classes(field_w)
+            with ui.grid().classes(
+                "grid-cols-1 md:grid-cols-2 gap-2 w-full max-w-[460px]"
+            ):
+                # Row 1
+                start_date_inp = datePickerLabel('Start Date', None, start_date_val)
+                end_date_inp = datePickerLabel('End Date', None, end_date_val)
 
-            # Native time pickers (clock selector)
-            start_inp = ui.input(
-                'Start Time',
-                value=_to_time_input_value(start_val),
-                validation={
-                    'Select a start time using the clock (e.g., 09:00).': _valid_time_required
-                },
-            ).props('outlined dense clearable type=time').classes(field_w)
-
-            end_inp = ui.input(
-                'End Time',
-                value=_to_time_input_value(end_val),
-                validation={
-                    'Select an end time using the clock (e.g., 10:30).': _valid_time_required
-                },
-            ).props('outlined dense clearable type=time').classes(field_w)
+                # Row 2
+                start_inp = timePickerLabel('Start Time', None, start_val)
+                end_inp = timePickerLabel('End Time', None, end_val)
 
             desc_inp = ui.textarea(
                 label='Description',
@@ -169,7 +163,7 @@ def open_edit_dialog(
                     ok = True
 
                     # Field-level validation first
-                    for comp in (title_inp, date_inp, start_inp, end_inp):
+                    for comp in (title_inp, start_date_inp, end_date_inp, start_inp, end_inp):
                         ok = comp.validate() and ok
 
                     # Cross-field validation for time ordering
@@ -188,17 +182,32 @@ def open_edit_dialog(
                         _set_error(end_inp, 'End time must be later than start time.')
                         ok = False
 
-                    # Recurrence validation
+                    # End date not before start date
+                    sd_str = (start_date_inp.value or '').strip()
+                    ed_str = (end_date_inp.value or '').strip()
+                    if sd_str and ed_str and _is_date(sd_str) and _is_date(ed_str):
+                        sd = datetime.strptime(sd_str, '%Y-%m-%d').date()
+                        ed = datetime.strptime(ed_str, '%Y-%m-%d').date()
+                        if ed < sd:
+                            ui.notify(
+                                'End date must be on or after the start date.',
+                                color='negative',
+                            )
+                            ok = False
+
+                    # Recurrence validation & values from RecurringComponent
                     freq_label, interval, until_iso, count_val = recurring_comp.get_values()
                     if (
                         freq_label != 'None'
                         and until_iso
                         and _is_date(until_iso)
-                        and _is_date(date_inp.value or '')
+                        and _is_date(start_date_inp.value or '')
                     ):
-                        sd = datetime.strptime(date_inp.value.strip(), '%Y-%m-%d').date()
-                        ed = datetime.strptime(until_iso, '%Y-%m-%d').date()
-                        if ed < sd:
+                        sd = datetime.strptime(
+                            start_date_inp.value.strip(), '%Y-%m-%d'
+                        ).date()
+                        rd = datetime.strptime(until_iso, '%Y-%m-%d').date()
+                        if rd < sd:
                             ui.notify(
                                 'Recurrence "Until" date must be on or after the event date.',
                                 color='negative',
@@ -206,7 +215,10 @@ def open_edit_dialog(
                             ok = False
 
                     if not ok:
-                        ui.notify('Please fix the highlighted fields before saving.', color='negative')
+                        ui.notify(
+                            'Please fix the highlighted fields before saving.',
+                            color='negative',
+                        )
                         return
 
                     # Recurrence & reminders payloads
@@ -219,27 +231,59 @@ def open_edit_dialog(
                     start_display = _minutes_to_12h_str(sm)
                     end_display = _minutes_to_12h_str(em)
 
-                    # --- Extra fields for SQL layer ---
+                    # --- Extra fields for SQL / data layer ---
                     is_recurring_flag = freq_label != 'None'
                     recurring_index = _FREQ_TO_INDEX.get(freq_label, 0)
                     is_alerting_flag = bool(minutes)
 
+                    # interval from RecurringComponent → recurring_interval
+                    recurring_interval = interval or 0
+
+                    # Map end options to index + values:
+                    # 0 = never, 1 = until date, 2 = after X occurrences
+                    recurring_end_option_index = 0
+                    recurring_end_date_str: Optional[str] = None
+                    recurring_end_count: Optional[int] = None
+
+                    if is_recurring_flag:
+                        if until_iso and _is_date(until_iso):
+                            recurring_end_option_index = 1
+                            recurring_end_date_str = until_iso.strip()
+                        elif isinstance(count_val, int) and count_val > 0:
+                            recurring_end_option_index = 2
+                            recurring_end_count = int(count_val)
+                        else:
+                            recurring_end_option_index = 0
+
                     updated = {
                         'title': (title_inp.value or '').strip(),
-                        'date': (date_inp.value or '').strip(),  # stays as YYYY-MM-DD
-                        'start': start_display,                  # e.g. '9:00 AM'
-                        'end': end_display,                      # e.g. '10:30 AM'
+
+                        # store dates back in both legacy + new forms
+                        'start_date': (start_date_inp.value or '').strip(),
+                        'date': (start_date_inp.value or '').strip(),       # legacy key
+                        'end_date': (end_date_inp.value or '').strip(),
+
+                        'start': start_display,                             # e.g. '9:00 AM'
+                        'end': end_display,                                 # e.g. '10:30 AM'
                         'recurring': recurring_text,
                         'recurrence': recurrence,
                         'description': (desc_inp.value or ''),
                         'reminders': all_labels,
                         'reminder_minutes': minutes,
-                        # DB-friendly fields:
+
+                        # DB / DTO-friendly fields:
                         'is_recurring': is_recurring_flag,
                         'recurring_option_index': recurring_index,
+                        'recurring_interval': recurring_interval,
                         'is_alerting': is_alerting_flag,
                         'selectedAlertCheckboxes': all_labels,
+
+                        # End-option structure
+                        'recurring_end_option_index': recurring_end_option_index,
+                        'recurring_end_date': recurring_end_date_str,   # ISO date string or None
+                        'recurring_end_count': recurring_end_count,     # int or None
                     }
+
                     on_save(updated)
                     dialog.close()
 
