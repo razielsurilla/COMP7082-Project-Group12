@@ -7,10 +7,11 @@ DATABASE_FILE = "followup.db"
 
 class Sql:
 	def __init__(self):
+		# ensure directory exists
+		os.makedirs(DATABASE_PATH, exist_ok=True)
 		relPath = os.path.abspath(DATABASE_PATH+DATABASE_FILE)
 		self.conn = sql.connect(relPath)
 		self.cursor = self.conn.cursor()
-		return None
 
 	def terminate(self):
 		self.conn.close()
