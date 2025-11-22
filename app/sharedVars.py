@@ -20,7 +20,9 @@ class AddEditEventData:
 	isAlerting: bool = False
 	recurringEventOptionIndex: int = 0
 	selectedAlertCheckboxes: List[int] = field(default_factory=list)
-			
+	recurringDays: int = 0
+	recurringEndDate: float = 0
+
 @dataclass
 class EventDateTime:
 	DATE_FORMAT: ClassVar[str] = "%Y-%m-%d/%H:%M"

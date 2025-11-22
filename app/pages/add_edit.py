@@ -13,6 +13,7 @@ class AddEditEvent:
 		self.eventStartData = EventDateTime()
 		self.eventEndData = EventDateTime()
 		self.calendarData = calendarData
+		self.recurringEndData = EventDateTime()
 		return None
 
 	def showPage(self):
@@ -22,6 +23,7 @@ class AddEditEvent:
 		def onSaveEvent(event):
 			self.pageData.eventStartDate = self.eventStartData.getDateTimestamp()
 			self.pageData.eventEndDate = self.eventEndData.getDateTimestamp()
+			self.pageData.recurringEndDate = self.recurringEndData.getDateTimestamp()
 			print(self.pageData)
 			self.calendarData.addData(self.pageData)
 		
@@ -80,8 +82,10 @@ class AddEditEvent:
 		return None
 
 	def recurringEventPanel(self):
-		radio_list = {1:'Every label days', 2:'Every Week', 3:'Every Month', 4:'Every Year'}
+		radio_list = {1:'Every custom days', 2:'Every Week', 3:'Every Month', 4:'Every Year'}
 		defaultIndex = 2
+		defaultDays = 1
+		customDaysInput = None
 		
 		def onToggleChange(event):
 			self.pageData.isRecurringEvent = event.value
@@ -89,12 +93,35 @@ class AddEditEvent:
 				self.pageData.recurringEventOptionIndex = 0
 		
 		def onRadioChange(event):
+			if event.value == 1:
+				customDaysInput.enable()
+				self.pageData.recurringDays = customDaysInput.value
+			else:
+				customDaysInput.disable()
+				self.pageData.recurringDays = 0
 			self.pageData.recurringEventOptionIndex = event.value
+		
+		def onCustomDaysChange(event):
+			self.pageData.recurringDays = event.value
+		
+		def onEndDateSelect(event):
+			self.recurringEndData.dateStr = event.value
+			
+		def onEndTimeSelect(event):
+			self.recurringEndData.timeStr = event.value
 		
 		#toggle
 		switch = ui.switch('Set Recurring Event', on_change=onToggleChange)
-		ui.label('I want this event to happen:').bind_visibility_from(switch, 'value')
-		recurringOptions = ui.radio(radio_list, value=defaultIndex, on_change=onRadioChange).bind_visibility_from(switch, 'value')
+		with ui.row():
+			with ui.column():
+				ui.label('I want this event to happen:').bind_visibility_from(switch, 'value')
+				recurringOptions = ui.radio(radio_list, value=defaultIndex, on_change=onRadioChange).bind_visibility_from(switch, 'value')
+			customDaysInput = ui.number(label="Number of Days", on_change=onCustomDaysChange, min=0, step=1).bind_visibility_from(switch, 'value').style('padding-top: 2em;')
+			customDaysInput.disable()
+		dateLabel = datePickerLabel("Recurring End Date", onEndDateSelect)
+		dateLabel.bind_visibility_from(switch, 'value')
+		timeLabel = timePickerLabel("Recurring End Time", onEndTimeSelect)
+		timeLabel.bind_visibility_from(switch, 'value')
 		return None
 
 	def eventEntryPanel(self):

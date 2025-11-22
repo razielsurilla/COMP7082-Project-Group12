@@ -14,6 +14,8 @@ class Event(Enum):
     ALERTING = "is_alerting"
     R_OPTION = "recurring_option"
     A_OPTIONS = "alerting_options"
+    R_DAYS = "recurring_days"
+    R_END_DATE = "recurring_end_date"
 
 class CalendarData:
 	def __init__(self, sqlInstance):
@@ -30,6 +32,8 @@ class CalendarData:
 		f"{Event.ALERTING.value} BOOLEAN,"
 		f"{Event.R_OPTION.value} INT,"
 		f"{Event.A_OPTIONS.value} TEXT,"
+		f"{Event.R_DAYS.value} INT,"
+		f"{Event.R_END_DATE.value} REAL NOT NULL,"
 		f"PRIMARY kEY ({Event.START_DATE.value}, {Event.END_DATE.value})"
 		f");")
 		
@@ -74,23 +78,26 @@ class CalendarData:
 				dataFrame.isAlerting = rows[i][5]
 				dataFrame.recurringEventOptionIndex = rows[i][6]
 				dataFrame.selectedAlertCheckboxes = rows[i][7]
+				dataFrame.recurringDays = rows[i][8]
+				dataFrame.recurringEndDate = rows[i][9]
 				dataList.append(dataFrame)
-		
-		print(dataList)
+		#print(dataList)
 		return dataList
 	
 	def addData(self, dataFrame):
 		query = (f"insert into {Event.TABLE_NAME.value} "
 		f"({Event.EVENT_NAME.value}, {Event.START_DATE.value}, {Event.END_DATE.value}, {Event.DESC.value},"
-		f"{Event.RECURRING.value}, {Event.ALERTING.value}, {Event.R_OPTION.value}, {Event.A_OPTIONS.value})"
+		f"{Event.RECURRING.value}, {Event.ALERTING.value}, {Event.R_OPTION.value}, {Event.A_OPTIONS.value},"
+		f"{Event.R_DAYS.value}, {Event.R_END_DATE.value})"
 		f"values ('{dataFrame.eventName}', {dataFrame.eventStartDate}, {dataFrame.eventEndDate}, "
 		f"'{dataFrame.eventDescription}', {dataFrame.isRecurringEvent}, {dataFrame.isAlerting}, "
-		f"{dataFrame.recurringEventOptionIndex}, '{json.dumps(dataFrame.selectedAlertCheckboxes)}'"
+		f"{dataFrame.recurringEventOptionIndex}, '{json.dumps(dataFrame.selectedAlertCheckboxes)} ', "
+		f"{dataFrame.recurringDays}, {dataFrame.recurringEndDate} "
 		f");")
 		
 		self.sql.execute(query)
 		self.sql.commit()
-		self.printAllData()
+		#self.printAllData()
 		return None
 
 	def printAllData(self):
@@ -132,7 +139,9 @@ class CalendarData:
 			f"{Event.RECURRING.value} = {int(bool(dataFrame.isRecurringEvent))}, "
 			f"{Event.ALERTING.value} = {int(bool(dataFrame.isAlerting))}, "
 			f"{Event.R_OPTION.value} = {int(dataFrame.recurringEventOptionIndex)}, "
-			f"{Event.A_OPTIONS.value} = '{json.dumps(dataFrame.selectedAlertCheckboxes)}' "
+			f"{Event.A_OPTIONS.value} = '{json.dumps(dataFrame.selectedAlertCheckboxes)}, ' "
+			f"{Event.R_DAYS.value} = {dataFrame.recurringDays}, "
+			f"{Event.R_END_DATE.value} = {dataFrame.recurringEndDate} "
 			f"where {Event.START_DATE.value} = {old_start_ts} "
 			f"and {Event.END_DATE.value} = {old_end_ts};"
 		)

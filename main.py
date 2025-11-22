@@ -53,9 +53,9 @@ def initModules():
 	calendarData.printAllData()
 	dataFrames = calendarData.getAllData()
 	
-	dateRangeMin = datetime(year=2025, month=1, day=25, hour=10, minute=30, second=0)
-	dateRangeMax = datetime(year=2026, month=1, day=25, hour=10, minute=30, second=0)
-	calendarData.findEventsInRangeMainCal(dateRangeMin.timestamp(), dateRangeMax.timestamp())
+	#dateRangeMin = datetime(year=2025, month=1, day=25, hour=10, minute=30, second=0)
+	#dateRangeMax = datetime(year=2026, month=1, day=25, hour=10, minute=30, second=0)
+	#calendarData.findEventsInRangeMainCal(dateRangeMin.timestamp(), dateRangeMax.timestamp())
 	return None
 
 
