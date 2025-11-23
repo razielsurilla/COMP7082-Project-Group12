@@ -14,6 +14,7 @@ class AddEditEvent:
 		self.eventEndData = EventDateTime()
 		self.calendarData = calendarData
 		self.recurringEndData = EventDateTime()
+		self.isCountSelected = False
 		return None
 
 	def showPage(self):
@@ -23,9 +24,13 @@ class AddEditEvent:
 		def onSaveEvent(event):
 			self.pageData.eventStartDate = self.eventStartData.getDateTimestamp()
 			self.pageData.eventEndDate = self.eventEndData.getDateTimestamp()
-			self.pageData.recurringEndDate = self.recurringEndData.getDateTimestamp()
+			if self.isCountSelected == True:
+				self.pageData.recurringEndDate = None
+			else:
+				self.pageData.recurringEndDate = self.recurringEndData.getDateTimestamp()
 			print(self.pageData)
 			self.calendarData.addData(self.pageData)
+			ui.notify('Event data saved!')
 		
 		with ui.column().classes("justify-center items-center h-screen w-full pl-[8rem] gap-8"):
 			ui.label(self.currentDate)
@@ -82,10 +87,11 @@ class AddEditEvent:
 		return None
 
 	def recurringEventPanel(self):
-		radio_list = {1:'Every custom days', 2:'Every Week', 3:'Every Month', 4:'Every Year'}
+		radio_list = {1:'Days', 2:'Week', 3:'Month', 4:'Year'}
 		defaultIndex = 2
 		defaultDays = 1
 		customDaysInput = None
+		self.pageData.recurringEventOptionIndex = defaultIndex
 		
 		def onToggleChange(event):
 			self.pageData.isRecurringEvent = event.value
@@ -93,16 +99,10 @@ class AddEditEvent:
 				self.pageData.recurringEventOptionIndex = 0
 		
 		def onRadioChange(event):
-			if event.value == 1:
-				customDaysInput.enable()
-				self.pageData.recurringDays = customDaysInput.value
-			else:
-				customDaysInput.disable()
-				self.pageData.recurringDays = 0
 			self.pageData.recurringEventOptionIndex = event.value
 		
 		def onCustomDaysChange(event):
-			self.pageData.recurringDays = event.value
+			self.pageData.recurringInterval = event.value
 		
 		def onEndDateSelect(event):
 			self.recurringEndData.dateStr = event.value
@@ -110,18 +110,44 @@ class AddEditEvent:
 		def onEndTimeSelect(event):
 			self.recurringEndData.timeStr = event.value
 		
+		def onSecondToggleChange(event):
+			toggleEndDateCount(event.value)
+		
+		def toggleEndDateCount(val):
+			if val == 1:
+				timeLabel.enable()
+				dateLabel.enable()
+				countInput.disable()
+				self.isCountSelected = False
+				self.pageData.recurringEndCount = None
+			else:
+				countInput.enable()
+				timeLabel.disable()
+				dateLabel.disable()
+				self.isCountSelected = True
+				self.pageData.recurringEndDate = None
+		
+		def onCountChange(event):
+			self.pageData.recurringEndCount = event.value
+		
 		#toggle
 		switch = ui.switch('Set Recurring Event', on_change=onToggleChange)
 		with ui.row():
 			with ui.column():
-				ui.label('I want this event to happen:').bind_visibility_from(switch, 'value')
-				recurringOptions = ui.radio(radio_list, value=defaultIndex, on_change=onRadioChange).bind_visibility_from(switch, 'value')
-			customDaysInput = ui.number(label="Number of Days", on_change=onCustomDaysChange, min=0, step=1).bind_visibility_from(switch, 'value').style('padding-top: 2em;')
-			customDaysInput.disable()
+				with ui.row():
+					ui.label('I want this event to happen every:').bind_visibility_from(switch, 'value')
+					customDaysInput = ui.number(label="Number", on_change=onCustomDaysChange, min=0, step=1, precision=0).bind_visibility_from(switch, 'value').style('margin-top: -35px;')
+					recurringOptions = ui.radio(radio_list, value=defaultIndex, on_change=onRadioChange).bind_visibility_from(switch, 'value').style('margin-top: -10px;')
+		toggle = ui.toggle({1: 'End At Time', 2: 'End At Count'}, value=1, on_change=onSecondToggleChange).bind_visibility_from(switch, 'value')
 		dateLabel = datePickerLabel("Recurring End Date", onEndDateSelect)
 		dateLabel.bind_visibility_from(switch, 'value')
 		timeLabel = timePickerLabel("Recurring End Time", onEndTimeSelect)
 		timeLabel.bind_visibility_from(switch, 'value')
+		with ui.row().style('margin-top: 20px;'):
+			repeatLabel = ui.label('I want this event to repeat every:').bind_visibility_from(switch, 'value')
+			countInput = ui.number(label="Number", on_change=onCountChange, min=0, step=1, precision=0).bind_visibility_from(switch, 'value').style('margin-top: -35px;')
+		toggleEndDateCount(1)
+		
 		return None
 
 	def eventEntryPanel(self):
@@ -151,3 +177,6 @@ class AddEditEvent:
 			timePickerLabel("End Time", onEndTimeSelect)
 		return None
 
+	def validateData(self):
+		
+		return None
