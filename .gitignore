@@ -223,3 +223,6 @@ uploaded_schedule_files/
 
 # nicegui shared data
 .nicegui/
+
+# local db
+data/followup.db

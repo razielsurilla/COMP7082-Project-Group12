@@ -181,11 +181,22 @@ class CalendarData:
             f"WHERE {Event.START_DATE.value} BETWEEN {rangeMin} AND {rangeMax};"
         )
         self.sql.execute(query)
-        fetchedData = self.sql.fetchall()
-        numFetchedDataRows = len(fetchedData)
-        # TODO: SORT VALUES INTO DICTIONARY FORM, key: day, value: list[events]
-        d = {"a": [1, 2, 3]}
-        return d
+        fetched_data = self.sql.fetchall()
+
+        event_dict = {}
+        start = rangeMin
+        end = rangeMin + 86400
+
+        for i in range(42):
+            day_list = []
+            for row in fetched_data:
+                day_list.append(row) if start <= row[1] <= end else None
+            if len(day_list) > 0:
+                event_dict[i] = day_list
+            start += 86400
+            end += 86400
+
+        return event_dict
 
     def findEventsInRangeImpDate(self, oldDate, newDate):
         query = (

@@ -1,16 +1,15 @@
 # app/pages/home.py
 from nicegui import app, ui
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import calendar
 
 from app.components import upcoming_events
 from app.sharedVars import SharedVars
-from dbmodule import calendardata
 
 
 # TODO: this should be a component, then home.py should create a Calendar object
 class Calendar:
-    def __init__(self):
+    def __init__(self, calendar_data):
         self.today = date.today()
         self.state = {"year": self.today.year, "month": self.today.month}
         self.calendar_container = None
@@ -19,16 +18,19 @@ class Calendar:
         self.year_select = None
         self.sharedData = SharedVars()
         self.month_event_data = None
+        self.calendar_data = calendar_data
 
     def generate_month(self, year: int, month: int):
         first_day = date(year, month, 1)
 
         # find the sunday before the first day so grid is always 7x6
         start_day = first_day - timedelta(days=(first_day.weekday() + 1) % 7)
-
         last_day = start_day + timedelta(days=41)
 
-        #self.month_event_data = calendardata.findEventsInRangeMainCal(first_day, last_day)
+        start_day_unix = int(datetime.combine(start_day, datetime.min.time()).timestamp())
+        last_day_unix = int(datetime.combine(last_day, datetime.max.time()).timestamp())
+
+        self.month_event_data = self.calendar_data.findEventsInRangeMainCal(start_day_unix, last_day_unix)
 
         # 6 weeks displayed, so 42 days
         return [start_day + timedelta(days=i) for i in range(42)]
@@ -42,7 +44,7 @@ class Calendar:
                 for weekday in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']:
                     ui.label(weekday).classes('text-md font-bold text-center')
                 #TODO: Make Buttons
-                for day in days:
+                for index, day in enumerate(days):
                     is_current = day.month == self.state["month"]
                     is_today = day == self.today
                     bg = 'bg-white' if is_current else 'bg-gray-200'
@@ -86,18 +88,17 @@ class Calendar:
                     with ui.card().classes(f'w-24 h-24 block p-2 {bg}').on('click', show_day_modal):
                         weekend = 'text-red' if (day.weekday() == 5 or day.weekday() == 6) else 'text-black'
                         ui.label(str(day.day)).classes(f'{weekend}')
-                        #self.month_event_data[day]
-                        if True:  # TODO: Check if day has events, and check length
-                            with ui.element('div').classes('flex'):
-                                ui.icon('circle').classes('text-blue-500 text-xs pt-1 pr-1')
-                                ui.label("One")
-                        if True:
-                            with ui.element('div').classes('flex'):
-                                ui.icon('circle').classes('text-blue-500 text-xs pt-1 pr-1')
-                                ui.label("Two")
-                        if True:  #if more than two events
-                            num_events = 3  #TODO: Fix logic later
-                            ui.label(f"+{num_events} More").classes('text-center')
+                        if day_events := self.month_event_data.get(index):
+                            with ui.element('div').classes('flex flex-nowrap items-center overflow-hidden'):
+                                ui.icon('circle').classes('text-blue-500 text-xs pr-1')
+                                ui.label(f"{day_events[0][0]}").classes("overflow-hidden whitespace-nowrap text-ellipsis min-w-0")
+                            if len(day_events) > 1:
+                                with ui.element('div').classes('flex flex-nowrap items-center overflow-hidden'):
+                                    ui.icon('circle').classes('text-blue-500 text-xs pr-1')
+                                    ui.label(f"{day_events[1][0]}").classes("overflow-hidden whitespace-nowrap text-ellipsis min-w-0")
+                            if len(day_events) > 2:  #if more than two events
+                                num_events = len(day_events) - 2
+                                ui.label(f"+{num_events} More").classes('text-center')
 
     def prev_month(self):
         # wraparound jan -> dec
@@ -176,7 +177,7 @@ class Calendar:
 
 
 class Dates:
-    def __init__(self):
+    def __init__(self, calendar_data):
         self.today = date.today()
         self.state = {"year": self.today.year, "month": self.today.month}
         self.month_abr = calendar.month_abbr[self.today.month]
@@ -217,8 +218,8 @@ class HomeTabs:
         self.calendar_data = calendar_data
 
     def show(self):
-        calendar_ui = Calendar()
-        important_dates_ui = Dates()
+        calendar_ui = Calendar(calendar_data=self.calendar_data)
+        important_dates_ui = Dates(calendar_data=self.calendar_data)
 
         with ui.tabs().classes('w-full fixed bottom-0 left-0 h-10') as tabs:
             calendar_tab = ui.tab("Main Calendar")
