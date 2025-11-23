@@ -198,15 +198,28 @@ class CalendarData:
 
         return event_dict
 
-    def findEventsInRangeImpDate(self, oldDate, newDate):
+    def findEventsInRangeImpDate(self, oldDate, newDate, daysInMonth):
         query = (
             f"SELECT * FROM {Event.TABLE_NAME.value} "
             f"WHERE {Event.START_DATE.value} BETWEEN {oldDate} AND {newDate};"
         )
-        # self.sql.execute(query)
-        # TODO: SORT VALUES INTO DICTIONARY FORM, key: day, value: list[events]
-        d = {"a": [1, 2, 3]}
-        return d
+        self.sql.execute(query)
+        fetched_data = self.sql.fetchall()
+
+        event_dict = {}
+        start = oldDate
+        end = oldDate + 86400
+
+        for i in range(daysInMonth):
+            day_list = []
+            for row in fetched_data:
+                day_list.append(row) if start <= row[1] <= end else None
+            if len(day_list) > 0:
+                event_dict[i] = day_list
+            start += 86400
+            end += 86400
+
+        return event_dict
 
     def updateEvent(self, old_start_ts, old_end_ts, dataFrame):
         """Update a single event identified by its original start/end timestamps."""

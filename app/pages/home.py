@@ -193,12 +193,20 @@ class Dates:
         self.today = date.today()
         self.state = {"year": self.today.year, "month": self.today.month}
         self.month_abr = calendar.month_abbr[self.today.month]
-        #self.dict = self.populate()
-        self.dict = range(1,20)
         self.calendar_data = calendar_data
+        self.num_of_days = calendar.monthrange(self.state["year"], self.state["month"])[1]
+        self.dict = self.populate()
+
 
     def populate(self):
-        return None
+        first_day = date(self.state["year"], self.state["month"], 1)
+        #always get last day of any month
+        last_day = date(self.state["year"], self.state["month"], self.num_of_days)
+
+        start_day_unix = int(datetime.combine(first_day, datetime.min.time()).timestamp())
+        last_day_unix = int(datetime.combine(last_day, datetime.max.time()).timestamp())
+
+        return self.calendar_data.findEventsInRangeImpDate(start_day_unix, last_day_unix, self.num_of_days)
 
     def show(self):
         ui.label("Important Dates").classes('w-full text-center text-2xl mt-4 font-bold')
@@ -208,22 +216,58 @@ class Dates:
                 with ui.row().classes('flex-nowrap gap-4 p-4'):
                     for item in self.dict:
                         with ui.card().classes('shrink-0 p-4 shadow-md inline-block bg-gray-300').style("width: calc(100vw / 4.5); height: 600px;"):
-                            ui.label(f"{self.month_abr} {item}").classes('w-full text-center font-bold text-xl mb-4')
-                            for item in range(3):
-                                with ui.card().classes('w-full h-20 p-2 mb-2 flex justify-between'):
-                                    # LS
-                                    with ui.element('div').classes('block mr-auto'):
-                                        ui.label("Event Name").classes('mb-5')
-                                        if True:  # If is a recurring event
-                                            with ui.element('div').classes('flex'):
-                                                ui.icon('cached').classes('pt-1 pr-1')
-                                                ui.label("Every 2 Days")
+                            ui.label(f"{self.month_abr} {int(item) + 1}").classes('w-full text-center font-bold text-xl mb-4')
+                            max = 5
+                            counter = 0
+                            for e in self.dict[item]:
+                                if counter < max:
+                                    with ui.card().classes('w-full h-20 p-2 flex justify-between mb-2'):
+                                        # LS
+                                        with ui.element('div').classes('flex flex-col shrink overflow-hidden min-w-0'):
+                                            ui.label(f"{e[0]}").classes(
+                                                'text-ellipsis whitespace-nowrap overflow-hidden min-w-0 max-w-40 mb-5')
+                                            if e[4]:  # If is a recurring event
+                                                s = ""
+                                                match e[6]:  # check type of recurrence
+                                                    case 1:
+                                                        s = f"Every {e[8]} Day(s)"
+                                                    case 2:
+                                                        s = "Weekly"
+                                                    case 3:
+                                                        s = "Monthly"
+                                                    case 4:
+                                                        s = "Yearly"
+                                                with ui.element('div').classes('flex'):
+                                                    ui.icon('cached').classes('pt-1 pr-1')
+                                                    ui.label(f"{s}")
 
-                                    with ui.element('div').classes('block ml-auto justify-right items-end text-right'):
-                                        ui.label(f"12:00")
-                                        if True:  # If event has end time
-                                            ui.label("to")
-                                            ui.label(f"1:00")
+                                        with ui.element('div').classes(
+                                                'h-full block ml-auto justify-right items-end text-right'):
+                                            ui.label(f"{datetime.fromtimestamp(e[1]).strftime('%H:%M')}")
+                                            if e[2] > 0:  # If event has end time
+                                                ui.label("to")
+                                                ui.label(f"{datetime.fromtimestamp(e[2]).strftime('%H:%M')}")
+                                    counter += 1
+                            if len(self.dict[item]) > max:
+                                ui.label(f"+{len(self.dict[item]) - max} More").classes(
+                                    'w-full text-center text-xl mb-4')
+
+
+                                # for event in self.dict[item]:
+                            #     with ui.card().classes('w-full h-20 p-2 mb-2 flex justify-between'):
+                            #         # LS
+                            #         with ui.element('div').classes('block mr-auto'):
+                            #             ui.label("Event Name").classes('mb-5')
+                            #             if True:  # If is a recurring event
+                            #                 with ui.element('div').classes('flex'):
+                            #                     ui.icon('cached').classes('pt-1 pr-1')
+                            #                     ui.label("Every 2 Days")
+                            #
+                            #         with ui.element('div').classes('block ml-auto justify-right items-end text-right'):
+                            #             ui.label(f"12:00")
+                            #             if True:  # If event has end time
+                            #                 ui.label("to")
+                            #                 ui.label(f"1:00")
 
 
 class HomeTabs:
