@@ -51,7 +51,7 @@ class Calendar:
                     if is_today:
                         bg = 'bg-blue-100'  # highlight today
 
-                    def show_day_modal(day=day):
+                    def show_day_modal(index=index, day=day):
                         with ui.dialog() as dialog, ui.card().classes(
                                 'p-4 w-80 h-120 flex items-center rounded-3xl relative bg-[#d9d9d9]'):
                             with ui.row().classes():
@@ -64,22 +64,34 @@ class Calendar:
                                 'text-xl font-bold text-center align-center'
                             )
 
-                            # TODO: ForEach Event on Day, make event.
-                            for i in range(1):
-                                with ui.card().classes('w-60 h-20 p-2 flex justify-between'):
-                                    #LS
-                                    with ui.element('div').classes('block mr-auto'):
-                                        ui.label("Event Name").classes('mb-5')
-                                        if True:  #If is a recurring event
-                                            with ui.element('div').classes('flex'):
-                                                ui.icon('cached').classes('pt-1 pr-1')
-                                                ui.label("Every 2 Days")
+                            with ui.column().classes('overflow-y-auto h-90 w-full my-2 gap-2'):
+                                if day_events := self.month_event_data.get(index):
+                                    for e in day_events:
+                                        print(e)
+                                        with ui.card().classes('w-60 h-20 p-2 flex justify-between min-w-0'):
+                                            #LS
+                                            with ui.element('div').classes('flex flex-col shrink overflow-hidden min-w-0'):
+                                                ui.label(f"{e[0]}").classes('text-ellipsis whitespace-nowrap overflow-hidden min-w-0 max-w-40 mb-5')
+                                                if e[4]:  #If is a recurring event
+                                                    s = ""
+                                                    match e[6]: #check type of recurrence
+                                                        case 1:
+                                                            s = f"Every {e[8]} Day(s)"
+                                                        case 2:
+                                                            s = "Weekly"
+                                                        case 3:
+                                                            s = "Monthly"
+                                                        case 4:
+                                                            s = "Yearly"
+                                                    with ui.element('div').classes('flex'):
+                                                        ui.icon('cached').classes('pt-1 pr-1')
+                                                        ui.label(f"{s}")
 
-                                    with ui.element('div').classes('block ml-auto justify-right items-end text-right'):
-                                        ui.label(f"12:00")
-                                        if True:  #If event has end time
-                                            ui.label("to")
-                                            ui.label(f"1:00")
+                                            with ui.element('div').classes('h-full block ml-auto justify-right items-end text-right'):
+                                                ui.label(f"{datetime.fromtimestamp(e[1]).strftime('%H:%M')}")
+                                                if e[2] > 0:  #If event has end time
+                                                    ui.label("to")
+                                                    ui.label(f"{datetime.fromtimestamp(e[2]).strftime('%H:%M')}")
 
                         dialog.open()
 
@@ -183,6 +195,7 @@ class Dates:
         self.month_abr = calendar.month_abbr[self.today.month]
         #self.dict = self.populate()
         self.dict = range(1,20)
+        self.calendar_data = calendar_data
 
     def populate(self):
         return None
