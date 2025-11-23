@@ -6,8 +6,8 @@ from nicegui import ui
 import re
 
 # ----- Constants -----
-FREQ_LABELS = ['None', 'Daily', 'Weekly', 'Monthly']
-FREQ_TO_RRULE = {'Daily': 'DAILY', 'Weekly': 'WEEKLY', 'Monthly': 'MONTHLY'}
+FREQ_LABELS = ['None', 'Daily', 'Weekly', 'Monthly', 'Yearly']
+FREQ_TO_RRULE = {'Daily': 'DAILY', 'Weekly': 'WEEKLY', 'Monthly': 'MONTHLY', 'Yearly':'YEARLY'}
 END_KIND_LABELS = ['Never', 'On date', 'After occurrences']
 
 
@@ -32,11 +32,11 @@ def _to_iso_date_str(v: Any) -> Optional[str]:
 
 
 def _parse_recurring_text(text: Optional[str]) -> Tuple[str, int]:
-    """Parse 'Every X days/weeks/months' into (freq_label, interval)."""
+    """Parse 'Every X days/weeks/months/years' into (freq_label, interval)."""
     if not text:
         return 'None', 1
     t = text.strip().lower()
-    if t in ('daily', 'weekly', 'monthly'):
+    if t in ('daily', 'weekly', 'monthly', 'yearly'):
         return t.capitalize(), 1
 
     m = re.search(r'\bevery\s+(\d+)\s+(day|days)\b', t)
@@ -51,6 +51,9 @@ def _parse_recurring_text(text: Optional[str]) -> Tuple[str, int]:
     if m:
         return 'Monthly', max(1, int(m.group(1)))
 
+    m = re.search(r'\bevery\s+(\d+)\s+(year|years)\b')
+    if m:
+        return 'Yearly', max(1, int(m.group(1)))
     return 'None', 1
 
 
@@ -63,7 +66,7 @@ def _recurring_human(
     """Convert recurrence structure to human-readable text."""
     if freq_label == 'None':
         return None
-    unit = {'Daily': 'Days', 'Weekly': 'Weeks', 'Monthly': 'Months'}[freq_label]
+    unit = {'Daily': 'Days', 'Weekly': 'Weeks', 'Monthly': 'Months', 'Yearly': 'Years'}[freq_label]
     base = f'Every {interval} {unit}' if interval > 1 else freq_label
     if until:
         return f'{base} until {until}'
