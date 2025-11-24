@@ -137,6 +137,14 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
     frames = calendar_data.getAllData() if use_db else []
     events: List[Dict[str, Any]] = [_from_data_frame(f) for f in frames]
 
+    # Always keep DB events sorted by start timestamp
+    if use_db:
+        events.sort(
+            key=lambda e: (
+                e.get('_start_ts') if isinstance(e.get('_start_ts'), (int, float)) else 0
+            )
+        )
+
     # ---- Header ----
     with ui.row().classes('items-center justify-between w-full px-4 pt-4'):
         ui.label('Upcoming Events').classes('text-h6 text-weight-bold text-black')
@@ -161,6 +169,11 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
         if use_db:
             frames2 = calendar_data.getAllData()
             events = [_from_data_frame(f) for f in frames2]
+            events.sort(
+                key=lambda e: (
+                    e.get('_start_ts') if isinstance(e.get('_start_ts'), (int, float)) else 0
+                )
+            )
 
     def _update_month_label(current_events: List[Dict[str, Any]]) -> None:
         if not current_events:
