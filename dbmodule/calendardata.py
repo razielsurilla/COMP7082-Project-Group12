@@ -224,7 +224,6 @@ class CalendarData:
                         if temp[1] > startDate:
                             repeated_events.append(temp)
 
-
                 case 2: #Num Times
                     counter = 0
                     while counter < item[11]:
@@ -234,12 +233,8 @@ class CalendarData:
                             repeated_events.append(temp)
                         counter += 1
 
-
         repeated_events = [tuple(e) for e in repeated_events] #back to tuples
         return repeated_events
-
-
-
 
 
     def findEventsInRangeMainCal(self, rangeMin, rangeMax):
@@ -277,6 +272,11 @@ class CalendarData:
         )
         self.sql.execute(query)
         fetched_data = self.sql.fetchall()
+
+        recurring_data = self.getAllRecurringEventsWithinRange(oldDate, newDate)
+
+        for r in recurring_data:
+            fetched_data.append(r)
 
         event_dict = {}
         start = oldDate
