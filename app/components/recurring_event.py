@@ -51,9 +51,10 @@ def _parse_recurring_text(text: Optional[str]) -> Tuple[str, int]:
     if m:
         return 'Monthly', max(1, int(m.group(1)))
 
-    m = re.search(r'\bevery\s+(\d+)\s+(year|years)\b')
+    m = re.search(r'\bevery\s+(\d+)\s+(year|years)\b', t)
     if m:
         return 'Yearly', max(1, int(m.group(1)))
+
     return 'None', 1
 
 
@@ -205,7 +206,7 @@ class RecurringComponent:
     def get_values(self) -> Tuple[str, int, Optional[str], Optional[int]]:
         """
         Returns:
-            freq_label: 'None' | 'Daily' | 'Weekly' | 'Monthly'
+            freq_label: 'None' | 'Daily' | 'Weekly' | 'Monthly' | 'Yearly'
             interval: int >= 1
             until_iso: 'YYYY-MM-DD' or None
             count_val: int or None

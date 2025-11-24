@@ -1,6 +1,6 @@
 # app/pages/upcoming_events.py
 from __future__ import annotations
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import List, Dict, Any, Optional
 import json
 
@@ -68,19 +68,19 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
 
         # Frequency index -> label
         idx = int(getattr(df, 'recurringEventOptionIndex', 0) or 0)
-        freq_labels = ['None', 'Daily', 'Weekly', 'Monthly']
+        freq_labels = ['None', 'Daily', 'Weekly', 'Monthly', 'Yearly']
         freq_label = freq_labels[idx] if 0 <= idx < len(freq_labels) else 'None'
 
-        # Interval / recurringInterval (for "Every N days/weeks/months")
+        # Interval / recurringInterval (for "Every N days/weeks/months/years")
         recurring_interval = int(getattr(df, 'recurringInterval', 1) or 1)
 
         # Human-readable recurring text for UI + RecurringComponent
         rec_text: Optional[str] = None
         if freq_label != 'None':
             if recurring_interval <= 1:
-                rec_text = freq_label  # 'Daily', 'Weekly', 'Monthly'
+                rec_text = freq_label  # 'Daily', 'Weekly', 'Monthly', 'Yearly'
             else:
-                unit_map = {'Daily': 'day', 'Weekly': 'week', 'Monthly': 'month'}
+                unit_map = {'Daily': 'day', 'Weekly': 'week', 'Monthly': 'month', 'Yearly': 'year'}
                 unit = unit_map.get(freq_label, 'time')
                 plural = 's' if recurring_interval != 1 else ''
                 rec_text = f'Every {recurring_interval} {unit}{plural}'
@@ -194,6 +194,7 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
             now = datetime.now()
             today = now.date()
             now_ts = now.timestamp()
+            cutoff_date = today + timedelta(days=30)
             window_list = []
 
             for e in base_list:
@@ -201,19 +202,18 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
                 if evd is None:
                     continue
 
-                # Only show events in the current month that are not in the past.
-                if evd.year == today.year and evd.month == today.month:
+                # Only show events in the next 30 days (including today)
+                if evd < today or evd > cutoff_date:
+                    continue
 
-                    # Future day this month
-                    if evd > today:
+                # Same day → only include if start timestamp is after now
+                if evd == today:
+                    start_ts = e.get('_start_ts')
+                    if isinstance(start_ts, (int, float)) and start_ts >= now_ts:
                         window_list.append(e)
-                        continue
-
-                    # Same day → only include if start timestamp is after now
-                    if evd == today:
-                        start_ts = e.get('_start_ts')
-                        if isinstance(start_ts, (int, float)) and start_ts >= now_ts:
-                            window_list.append(e)
+                else:
+                    # Any future day within the 30-day window
+                    window_list.append(e)
 
         # --- Sorting and draw ---
         def sort_key(e: Dict[str, Any]):
