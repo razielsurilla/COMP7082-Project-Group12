@@ -404,7 +404,7 @@ def show(calendar_data: Optional[Any] = None) -> None:
             ui.separator().classes('q-my-sm')
 
             with ui.row().classes('items-center justify-around text-grey-7'):
-                ui.icon('edit_note').classes('cursor-pointer hover:text-primary').on(
+                ui.icon('edit_note').classes('cursor-pointer hover:text-primary text-2xl').on(
                     'click',
                     lambda _=None, ev=evt: open_edit_dialog(
                         ev,
@@ -412,7 +412,7 @@ def show(calendar_data: Optional[Any] = None) -> None:
                         on_delete=lambda original=ev: _remove_event(original),
                     )
                 )
-                ui.icon('delete').classes('cursor-pointer hover:text-negative').on(
+                ui.icon('delete').classes('cursor-pointer hover:text-negative text-2xl').on(
                     'click', lambda _=None, original=evt: _remove_event(original)
                 )
 

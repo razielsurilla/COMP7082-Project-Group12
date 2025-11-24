@@ -464,7 +464,7 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
 
             with ui.row().classes('items-center justify-around text-grey-7'):
                 ui.icon('edit_note').classes(
-                    'cursor-pointer hover:text-primary'
+                    'cursor-pointer hover:text-primary text-2xl'
                 ).on(
                     'click',
                     lambda _=None, ev=evt: open_edit_dialog(
@@ -476,7 +476,7 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
                     ),
                 )
                 ui.icon('delete').classes(
-                    'cursor-pointer hover:text-negative'
+                    'cursor-pointer hover:text-negative text-2xl'
                 ).on(
                     'click', lambda _=None, original=evt: _remove_event(original)
                 )
