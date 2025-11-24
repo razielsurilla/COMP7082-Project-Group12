@@ -3,6 +3,10 @@ import json
 from datetime import datetime, date, timedelta
 from app.sharedVars import AddEditEventData
 
+DAY_IN_SECONDS = 86400
+WEEK_IN_SECONDS = 604800
+YEAR_IN_SECONDS = 31536000
+
 # data tables
 class Event(Enum):
     TABLE_NAME = "events"
@@ -175,6 +179,69 @@ class CalendarData:
         dateObj = datetime.fromtimestamp(timestamp)
         return dateObj
 
+    def getAllRecurringEventsWithinRange(self, startDate, endDate):
+        query = (
+            f"SELECT * FROM {Event.TABLE_NAME.value} "
+            f"WHERE {Event.RECURRING.value} = 1 "
+            f"AND {Event.START_DATE.value} <= '{endDate}'"
+        )
+        self.sql.execute(query)
+        fetched_data = self.sql.fetchall()
+        fetched_data = [list(row) for row in fetched_data] #make list so mutable
+
+        repeated_events = []
+        for item in fetched_data:
+            copy = item[:]
+            increment = 99999999
+
+            match item[6]: #Find how much we increment by
+                case 1: #Daily
+                    increment = DAY_IN_SECONDS * item[8]
+                case 2: #Weekly
+                    increment = WEEK_IN_SECONDS * item[8]
+                case 3: #Monthly, Simple logic due to time constraint
+                    increment = DAY_IN_SECONDS * 30 * item[8]
+                case 4: #Yearly
+                    increment = YEAR_IN_SECONDS * item[8]
+
+            match item[9]: #Handle end point logic
+                case 0: #None
+                    inc = item[1] + increment
+                    while inc <= endDate:
+                        if inc >= startDate:
+                            temp = item.copy()
+                            temp[1] = inc
+                            repeated_events.append(temp)
+                        print(inc)
+                        inc += increment
+
+                case 1: #End Date
+                    inc = item[1]
+                    while inc < item[10]:
+                        inc += increment
+                        temp = item.copy()
+                        temp[1] = inc
+                        if temp[1] > startDate:
+                            repeated_events.append(temp)
+
+
+                case 2: #Num Times
+                    counter = 0
+                    while counter < item[11]:
+                        temp = item.copy()
+                        temp[1] += (increment * (counter + 1))
+                        if temp[1] > startDate:
+                            repeated_events.append(temp)
+                        counter += 1
+
+
+        repeated_events = [tuple(e) for e in repeated_events] #back to tuples
+        return repeated_events
+
+
+
+
+
     def findEventsInRangeMainCal(self, rangeMin, rangeMax):
         query = (
             f"SELECT * FROM {Event.TABLE_NAME.value} "
@@ -183,18 +250,23 @@ class CalendarData:
         self.sql.execute(query)
         fetched_data = self.sql.fetchall()
 
+        recurring_data = self.getAllRecurringEventsWithinRange(rangeMin, rangeMax)
+
+        for r in recurring_data:
+            fetched_data.append(r)
+
         event_dict = {}
         start = rangeMin
-        end = rangeMin + 86400
+        end = rangeMin + DAY_IN_SECONDS
 
         for i in range(42):
             day_list = []
             for row in fetched_data:
-                day_list.append(row) if start <= row[1] <= end else None
+                day_list.append(row) if start <= row[1] < end else None
             if len(day_list) > 0:
                 event_dict[i] = day_list
-            start += 86400
-            end += 86400
+            start += DAY_IN_SECONDS
+            end += DAY_IN_SECONDS
 
         return event_dict
 
@@ -208,7 +280,7 @@ class CalendarData:
 
         event_dict = {}
         start = oldDate
-        end = oldDate + 86400
+        end = oldDate + DAY_IN_SECONDS
 
         for i in range(daysInMonth):
             day_list = []
@@ -216,8 +288,8 @@ class CalendarData:
                 day_list.append(row) if start <= row[1] <= end else None
             if len(day_list) > 0:
                 event_dict[i] = day_list
-            start += 86400
-            end += 86400
+            start += DAY_IN_SECONDS
+            end += DAY_IN_SECONDS
 
         return event_dict
 
