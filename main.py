@@ -10,6 +10,7 @@ sqlInstance = None
 
 @ui.page('/')
 def home_page():
+	ui.page_title('FollowUp/Calendar')
 	# calendar_ui = home.Calendar()
 	# with_sidebar(calendar_ui.show)
 	home_tabs = home.HomeTabs(calendar_data=calendarData)
@@ -18,15 +19,18 @@ def home_page():
 
 @ui.page('/events')
 def events_page():
+	ui.page_title('FollowUp/Events')
 	with_sidebar(lambda: events.show(calendar_data=calendarData))
 
 @ui.page('/upload')
 def upload_page():
+	ui.page_title('FollowUp/Upload')
 	upload_ui = upload_schedule.UploadSchedule()
 	with_sidebar(upload_ui.show)
 
 @ui.page('/add-edit')
 def add_edit_page():
+	ui.page_title('FollowUp/Add Events')
 	data = app.storage.user.get(sharedVariables.ADDEDIT_DATA_KEY, sharedVariables.DATA_DEFAULT_VALUE)
 	addEditEvent = add_edit.AddEditEvent(data, calendarData)
 	with_justSidebar(addEditEvent.showPage)
@@ -34,8 +38,9 @@ def add_edit_page():
 
 @ui.page('/assistant')
 def assistant_page():
+	ui.page_title('FollowUp/Assistant')
 #	with_sidebar(None)
-    ui.label("TBD")
+	ui.label("TBD")
 
 
 # ---------- MODULE SETUP ----------
@@ -60,13 +65,14 @@ def initModules():
 
 
 def terminateModules(sqlInstance):
-    print("Gracefully close database connection.")
-    try:
-        sqlInstance.terminate()
-    except Exception:
-        pass
+	print("Gracefully close database connection.")
+	try:
+		sqlInstance.terminate()
+	except Exception:
+		pass
 
 if __name__ in {"__main__", "__mp_main__"}:
+	#ui.page_title('FollowUp')
 	initModules()
 	ui.run(storage_secret=sharedVariables.STORAGE_SECRET, port=sharedVariables.PORT)
 	#terminateModules(sqlInstance)
