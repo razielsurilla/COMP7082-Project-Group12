@@ -76,13 +76,13 @@ class Calendar:
                                                     s = ""
                                                     match e[6]: #check type of recurrence
                                                         case 1:
-                                                            s = f"Every {e[8]} Day(s)"
+                                                            s = f"Every {e[8]} Days" if e[8] > 1 else "Daily"
                                                         case 2:
-                                                            s = "Weekly"
+                                                            s = f"Every {e[8]} Weeks" if e[8] > 1 else "Weekly"
                                                         case 3:
-                                                            s = "Monthly"
+                                                            s = f"Every {e[8]} Months" if e[8] > 1 else "Monthly"
                                                         case 4:
-                                                            s = "Yearly"
+                                                            s = f"Every {e[8]} Years" if e[8] > 1 else "Yearly"
                                                     with ui.element('div').classes('flex'):
                                                         ui.icon('cached').classes('pt-1 pr-1')
                                                         ui.label(f"{s}")
@@ -211,8 +211,8 @@ class Dates:
     def show(self):
         ui.label("Important Dates").classes('w-full text-center text-2xl mt-4 font-bold')
         ui.label(f"{calendar.month_name[self.state['month']]} {self.state['year']}").classes('w-full text-center text-xl font-bold')
-        with ui.element().classes('flex flex-col w-full grow overflow-hidden').style("height: calc(100vh - 250px);"):
-            with ui.element().classes("w-full overflow-x-auto overflow-y-hidden whitespace-nowrap p-4").style("flex: none"):
+        with ui.element().classes('flex flex-col w-full grow overflow-y-hidden').style("height: calc(100vh - 250px);"):
+            with ui.element().classes("w-full overflow-x-auto overflow-y-hidden whitespace-nowrap p-4 pb-2").style("flex: none"):
                 with ui.row().classes('flex-nowrap gap-4 p-4'):
                     for item in self.dict:
                         with ui.card().classes('shrink-0 p-4 shadow-md inline-block bg-gray-300').style("width: calc(100vw / 4.5); height: 600px;"):
@@ -230,13 +230,13 @@ class Dates:
                                                 s = ""
                                                 match e[6]:  # check type of recurrence
                                                     case 1:
-                                                        s = f"Every {e[8]} Day(s)"
+                                                        s = f"Every {e[8]} Days" if e[8] > 1 else "Daily"
                                                     case 2:
-                                                        s = "Weekly"
+                                                        s = f"Every {e[8]} Weeks" if e[8] > 1 else "Weekly"
                                                     case 3:
-                                                        s = "Monthly"
+                                                        s = f"Every {e[8]} Months" if e[8] > 1 else "Monthly"
                                                     case 4:
-                                                        s = "Yearly"
+                                                        s = f"Every {e[8]} Years" if e[8] > 1 else "Yearly"
                                                 with ui.element('div').classes('flex'):
                                                     ui.icon('cached').classes('pt-1 pr-1')
                                                     ui.label(f"{s}")
