@@ -69,8 +69,7 @@ class AddEditEvent:
 			validationPassRecurring2 = False;
 			
 			# to prevent short-circuit-eval
-			if all([self.eventName.validate(), self.eventDesc.validate(), 
-				self.eventStartDate.validate(),  self.eventEndDate.validate()]):
+			if all([self.eventName.validate(), self.eventStartDate.validate(),  self.eventEndDate.validate()]):
 				validationPassMain = True
 			
 			if self.recurringToggle.value:
@@ -102,7 +101,7 @@ class AddEditEvent:
 					self.eventEntryPanel()
 					self.alertsPanel()
 				with ui.column():
-					self.eventDesc = ui.textarea(label='Event Description', on_change=onDescriptionChange, validation=self.validateDescription).props('clearable').without_auto_validation()
+					self.eventDesc = ui.textarea(label='Event Description', on_change=onDescriptionChange).props('clearable')
 					resultDescription = ui.label()
 					self.recurringEventPanel()
 			ui.button('Save Event', on_click=onSaveEvent)
@@ -164,15 +163,19 @@ class AddEditEvent:
 			self.pageData.recurringEventOptionIndex = event.value
 		
 		def onRecurringIntervalChange(event):
+			self.recurringInterval.error = None
 			self.pageData.recurringInterval = event.value
 		
 		def onEndDateSelect(event):
+			self.recurringEndDate.error = None
 			self.recurringEndData.dateStr = event.value
 			
 		def onEndTimeSelect(event):
+			self.recurringEndTime.error = None
 			self.recurringEndData.timeStr = event.value
 		
 		def onRecurringCountToggleChange(event):
+			self.recurringCountToggle.error = None
 			toggleEndDateCount(event.value)
 		
 		def toggleEndDateCount(val):
@@ -214,18 +217,23 @@ class AddEditEvent:
 
 	def eventEntryPanel(self):
 		def onStartDateSelect(event):
+			self.eventStartDate.error = None
 			self.eventStartData.dateStr = event.value
 		
 		def onStartTimeSelect(event):
+			self.eventStartTime.error = None
 			self.eventStartData.timeStr = event.value
 			
 		def onEndDateSelect(event):
+			self.eventEndDate.error = None
 			self.eventEndData.dateStr = event.value
 			
 		def onEndTimeSelect(event):
+			self.eventEndTime.error = None
 			self.eventEndData.timeStr = event.value
 			
 		def onEventNameChange(event):
+			self.eventName.error = None
 			self.pageData.eventName = event.value
 		
 		self.eventName = ui.input(label='Event Name', on_change=onEventNameChange, validation=self.validateName).without_auto_validation()
@@ -241,11 +249,6 @@ class AddEditEvent:
 	def validateName(self, value):
 		if len(value) < 1:
 			return "Please add a meaningful name."
-		return None
-	
-	def validateDescription(self, value):
-		if len(value) < 1:
-			return "Please add a meaningful description."
 		return None
 		
 	def validateDate(self, value):
