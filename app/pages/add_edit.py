@@ -40,28 +40,23 @@ class AddEditEvent:
 			self.pageData.eventDescription = event.value
 		
 		def onSaveEvent(event):
+			
 			if self.eventStartDate.validation == None:
-				self.eventStartDate.without_auto_validation()
 				self.eventStartDate.validation = self.validateDate
 			
 			if self.eventStartTime.validation == None:
-				self.eventStartTime.without_auto_validation()
 				self.eventStartTime.validation = self.validateTime
 				
 			if self.eventEndDate.validation == None:
-				self.eventEndDate.without_auto_validation()
 				self.eventEndDate.validation = self.validateDate
 			
 			if self.eventEndTime.validation == None:
-				self.eventEndTime.without_auto_validation()
 				self.eventEndTime.validation = self.validateTime
-				
+			
 			if self.recurringEndDate.validation == None:
-				self.recurringEndDate.without_auto_validation()
 				self.recurringEndDate.validation = self.validateDate
 			
 			if self.recurringEndTime.validation == None:
-				self.recurringEndTime.without_auto_validation()
 				self.recurringEndTime.validation = self.validateTime
 			
 			validationPassMain = False
@@ -69,7 +64,8 @@ class AddEditEvent:
 			validationPassRecurring2 = False
 			
 			# to prevent short-circuit-eval
-			if all([self.eventName.validate(), self.eventStartDate.validate(),  self.eventEndDate.validate()]):
+			if all([self.eventName.validate(), self.eventStartDate.validate(),  self.eventEndDate.validate(),
+				self.eventStartTime.validate(), self.eventEndTime.validate()]):
 				validationPassMain = True
 			
 			if self.recurringToggle.value:
@@ -209,9 +205,9 @@ class AddEditEvent:
 					self.recurringInterval = ui.number(label="Number", on_change=onRecurringIntervalChange, validation=self.validateRecurringInterval, min=0, step=1, precision=0).bind_visibility_from(self.recurringToggle, 'value').style('margin-top: -35px;').without_auto_validation()
 					recurringOptions = ui.radio(radio_list, value=defaultIndex, on_change=onRadioChange).bind_visibility_from(self.recurringToggle, 'value').style('margin-top: -10px;')
 		self.recurringCountToggle = ui.toggle({1: 'End At Time', 2: 'End At Count'}, value=1, on_change=onRecurringCountToggleChange).bind_visibility_from(self.recurringToggle, 'value')
-		self.recurringEndDate = datePickerLabel("Recurring End Date", onEndDateSelect)
+		self.recurringEndDate = datePickerLabel("Recurring End Date", onEndDateSelect).without_auto_validation()
 		self.recurringEndDate.bind_visibility_from(self.recurringToggle, 'value')
-		self.recurringEndTime = timePickerLabel("Recurring End Time", onEndTimeSelect)
+		self.recurringEndTime = timePickerLabel("Recurring End Time", onEndTimeSelect).without_auto_validation()
 		self.recurringEndTime.bind_visibility_from(self.recurringToggle, 'value')
 		with ui.row().style('margin-top: 20px;'):
 			repeatLabel = ui.label('I want this event to repeat every:').bind_visibility_from(self.recurringToggle, 'value')
@@ -243,12 +239,11 @@ class AddEditEvent:
 		
 		self.eventName = ui.input(label='Event Name', on_change=onEventNameChange, validation=self.validateName).without_auto_validation()
 		with ui.row():
-			self.eventStartDate = datePickerLabel("Start Date", onStartDateSelect)
-			self.eventStartTime = timePickerLabel("Start Time", onStartTimeSelect)
-			
+			self.eventStartDate = datePickerLabel("Start Date", onStartDateSelect).without_auto_validation()
+			self.eventStartTime = timePickerLabel("Start Time", onStartTimeSelect).without_auto_validation()
 		with ui.row():
-			self.eventEndDate = datePickerLabel("End Date", onEndDateSelect)
-			self.eventEndTime = timePickerLabel("End Time", onEndTimeSelect)
+			self.eventEndDate = datePickerLabel("End Date", onEndDateSelect).without_auto_validation()
+			self.eventEndTime = timePickerLabel("End Time", onEndTimeSelect).without_auto_validation()
 		return None
 	
 	def validateName(self, value):
@@ -257,13 +252,21 @@ class AddEditEvent:
 		return None
 		
 	def validateDate(self, value):
-		if len(value) < 1:
-			return "Please add valid date."
+		DATE_FORMAT = "%Y-%m-%d"
+		try:
+			dateObj = datetime.strptime(f"{value}", DATE_FORMAT)
+			return None
+		except ValueError as e:
+			return "Please add well formatted date."
 		return None
 	
 	def validateTime(self, value):
-		if len(value) < 1:
-			return "Please add valid time."
+		TIME_FORMAT = "%H:%M"
+		try:
+			timeObj = datetime.strptime(f"{value}", TIME_FORMAT)
+			return None
+		except ValueError as e:
+			return "Please add well formatted time."
 		return None
 	
 	def validateRecurringInterval(self, value):
