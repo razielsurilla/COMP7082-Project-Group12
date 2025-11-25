@@ -64,9 +64,9 @@ class AddEditEvent:
 				self.recurringEndTime.without_auto_validation()
 				self.recurringEndTime.validation = self.validateTime
 			
-			validationPassMain = False;
-			validationPassRecurring1 = False;
-			validationPassRecurring2 = False;
+			validationPassMain = False
+			validationPassRecurring1 = False
+			validationPassRecurring2 = False
 			
 			# to prevent short-circuit-eval
 			if all([self.eventName.validate(), self.eventStartDate.validate(),  self.eventEndDate.validate()]):
@@ -74,12 +74,14 @@ class AddEditEvent:
 			
 			if self.recurringToggle.value:
 				validationPassRecurring1 = self.recurringInterval.validate()
-				
 				if self.recurringCountToggle.value == 1:
 					if all([self.recurringEndDate.validate(), self.recurringEndTime.validate()]):
 						validationPassRecurring2 = True;
 				elif self.recurringCountToggle.value == 2:
 					validationPassRecurring2 = self.recurringCount.validate()
+			else:
+				validationPassRecurring1 = True
+				validationPassRecurring2 = True
 				
 			if not all([validationPassMain, validationPassRecurring1, validationPassRecurring2]):
 				ui.notify('Event data incorrect!')
@@ -175,7 +177,9 @@ class AddEditEvent:
 			self.recurringEndData.timeStr = event.value
 		
 		def onRecurringCountToggleChange(event):
-			self.recurringCountToggle.error = None
+			self.recurringCount.error = None
+			self.recurringEndDate.error = None
+			self.recurringEndTime.error = None
 			toggleEndDateCount(event.value)
 		
 		def toggleEndDateCount(val):
@@ -193,6 +197,7 @@ class AddEditEvent:
 				self.pageData.recurringEndDate = None
 		
 		def onRecurringCountChange(event):
+			self.recurringCount.error = None
 			self.pageData.recurringEndCount = event.value
 		
 		#toggle
