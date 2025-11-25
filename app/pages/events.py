@@ -1,6 +1,6 @@
 # app/pages/events.py
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Dict, Any, Optional
 import json
 
@@ -44,6 +44,72 @@ def _parse_date_time(date_str: str, time_str: str) -> float:
 
     raise ValueError(f"Cannot parse date/time: '{joined}'")
 
+def _parse_search_month(q: str) -> Optional[int]:
+    """Try to interpret the search query as a month (e.g. 'november', 'nov').
+
+    Returns the month number 1–12 if it matches, otherwise None.
+    """
+    q = (q or '').strip().lower()
+    if not q:
+        return None
+
+    months_full = [
+        'january', 'february', 'march', 'april', 'may', 'june',
+        'july', 'august', 'september', 'october', 'november', 'december'
+    ]
+    months_abbr = [
+        'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+        'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+    ]
+
+    if q in months_full:
+        return months_full.index(q) + 1
+    if q in months_abbr:
+        return months_abbr.index(q) + 1
+
+    return None
+
+def _parse_search_date(q: str) -> Optional[date]:
+    """Try to interpret the search query as a date in common formats.
+
+    Supported examples:
+      '2025-01-08', '2025/01/08',
+      'Jan 8', 'January 8', 'Jan 8 2025', '8 Jan 2025', etc.
+    Returns a date object if parsing succeeds, otherwise None.
+    """
+    q = (q or '').strip()
+    if not q:
+        return None
+
+    # Normalize a bit
+    q_norm = q.replace(',', ' ')
+
+    # Try a bunch of reasonable formats
+    formats = [
+        '%Y-%m-%d',
+        '%Y/%m/%d',
+        '%b %d %Y',
+        '%B %d %Y',
+        '%d %b %Y',
+        '%d %B %Y',
+        '%b %d',
+        '%B %d',
+        '%d %b',
+        '%d %B',
+    ]
+
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(q_norm, fmt)
+            # If year not provided, assume current year
+            if '%Y' not in fmt:
+                today = date.today()
+                dt = dt.replace(year=today.year)
+            return dt.date()
+        except ValueError:
+            continue
+
+    return None
 
 # --------------------------------------------
 # Main page
@@ -180,18 +246,53 @@ def show(calendar_data: Optional[Any] = None) -> None:
 
     def refresh():
         container.clear()
-        q = (search_box.value or '').strip().lower()
+        raw_q = (search_box.value or '').strip()
+        q = raw_q.lower()
         filtered: List[Dict[str, Any]] = []
+
         if q:
+            # Try to interpret the query as a date or a month
+            query_date = _parse_search_date(raw_q)
+            query_month = _parse_search_month(raw_q)
+
             for e in events:
-                hay = ' '.join([
-                    str(e.get('title', '')),
-                    str(e.get('start_date', '')),
-                    str(e.get('start', '')),
-                    str(e.get('end', '')),
-                    str(e.get('recurring', '')),
-                ]).lower()
-                if q in hay:
+                matched = False
+
+                # 1) Month-only match (e.g. "november", "nov")
+                if query_month is not None:
+                    try:
+                        ev_date_str = str(e.get('start_date', '')).strip()
+                        if ev_date_str:
+                            ev_date = datetime.fromisoformat(ev_date_str).date()
+                            if ev_date.month == query_month:
+                                matched = True
+                    except Exception:
+                        pass
+
+                # 2) Exact date match (e.g. "2025-11-24", "Jan 8 2025")
+                if not matched and query_date is not None:
+                    try:
+                        ev_date_str = str(e.get('start_date', '')).strip()
+                        if ev_date_str:
+                            ev_date = datetime.fromisoformat(ev_date_str).date()
+                            if ev_date == query_date:
+                                matched = True
+                    except Exception:
+                        pass
+
+                # 3) Fallback: substring text search (title, date, times, recurring text)
+                if not matched:
+                    hay = ' '.join([
+                        str(e.get('title', '')),
+                        str(e.get('start_date', '')),
+                        str(e.get('start', '')),
+                        str(e.get('end', '')),
+                        str(e.get('recurring', '')),
+                    ]).lower()
+                    if q in hay:
+                        matched = True
+
+                if matched:
                     filtered.append(e)
         else:
             filtered = events
@@ -202,6 +303,7 @@ def show(calendar_data: Optional[Any] = None) -> None:
             ):
                 for evt in filtered:
                     _event_card(evt)
+
 
     # --------------------------------------------
     # CRUD handlers
