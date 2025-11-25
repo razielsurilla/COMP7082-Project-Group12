@@ -191,7 +191,6 @@ class CalendarData:
 
         repeated_events = []
         for item in fetched_data:
-            copy = item[:]
             increment = 99999999
 
             match item[6]: #Find how much we increment by
@@ -212,7 +211,6 @@ class CalendarData:
                             temp = item.copy()
                             temp[1] = inc
                             repeated_events.append(temp)
-                        print(inc)
                         inc += increment
 
                 case 1: #End Date

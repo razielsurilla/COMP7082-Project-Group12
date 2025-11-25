@@ -1,7 +1,7 @@
 from nicegui import app, ui
 from app.sharedVars import SharedVars
 from app.layout import with_sidebar, with_justSidebar
-from app.pages import home, upload_schedule, add_edit, events
+from app.pages import home, upload_schedule, add_edit, events, chat_assistant
 from dbmodule.sql import Sql
 from dbmodule.calendardata import CalendarData
 from datetime import datetime
@@ -39,9 +39,8 @@ def add_edit_page():
 @ui.page('/assistant')
 def assistant_page():
 	ui.page_title('FollowUp/Assistant')
-#	with_sidebar(None)
-	ui.label("TBD")
-
+	chat_ui = chat_assistant.ChatPage()
+	with_sidebar(chat_ui.show)
 
 # ---------- MODULE SETUP ----------
 def initModules():

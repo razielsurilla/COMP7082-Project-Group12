@@ -68,10 +68,10 @@ def show(calendar_data: Optional[Any] = None) -> None:
 
         # Frequency index -> label
         idx = int(getattr(df, 'recurringEventOptionIndex', 0) or 0)
-        freq_labels = ['None', 'Daily', 'Weekly', 'Monthly']
+        freq_labels = ['None', 'Daily', 'Weekly', 'Monthly', 'Yearly']
         freq_label = freq_labels[idx] if 0 <= idx < len(freq_labels) else 'None'
 
-        # Interval (Every N days/weeks/months)
+        # Interval (Every N days/weeks/months/years)
         recurring_interval= int(getattr(df, 'recurringInterval', 1) or 1)
 
         # Human-readable recurring label
@@ -80,7 +80,7 @@ def show(calendar_data: Optional[Any] = None) -> None:
             if recurring_interval <= 1:
                 recurring_label = freq_label
             else:
-                unit_map = {'Daily': 'day', 'Weekly': 'week', 'Monthly': 'month'}
+                unit_map = {'Daily': 'day', 'Weekly': 'week', 'Monthly': 'month', 'Yearly': 'year'}
                 unit = unit_map.get(freq_label, 'time')
                 plural = 's' if recurring_interval != 1 else ''
                 recurring_label = f'Every {recurring_interval} {unit}{plural}'
@@ -404,7 +404,7 @@ def show(calendar_data: Optional[Any] = None) -> None:
             ui.separator().classes('q-my-sm')
 
             with ui.row().classes('items-center justify-around text-grey-7'):
-                ui.icon('edit_note').classes('cursor-pointer hover:text-primary').on(
+                ui.icon('edit_note').classes('cursor-pointer hover:text-primary text-2xl').on(
                     'click',
                     lambda _=None, ev=evt: open_edit_dialog(
                         ev,
@@ -412,7 +412,7 @@ def show(calendar_data: Optional[Any] = None) -> None:
                         on_delete=lambda original=ev: _remove_event(original),
                     )
                 )
-                ui.icon('delete').classes('cursor-pointer hover:text-negative').on(
+                ui.icon('delete').classes('cursor-pointer hover:text-negative text-2xl').on(
                     'click', lambda _=None, original=evt: _remove_event(original)
                 )
 
