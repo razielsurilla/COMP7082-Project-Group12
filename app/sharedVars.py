@@ -1,10 +1,11 @@
+import os
 from dataclasses import dataclass, field
 from typing import ClassVar, List
 from datetime import datetime, date, timedelta
 
 class SharedVars:
 	def __init__(self):
-		self.PORT = 9090
+		self.PORT = int(os.getenv('PORT', 9090))
 		self.STORAGE_SECRET = 'followupPortal'
 		self.ADDEDIT_DATA_KEY = 'addEditData'
 		self.DATA_DEFAULT_VALUE = 'No data'

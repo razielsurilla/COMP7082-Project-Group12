@@ -17,6 +17,10 @@ def home_page():
 	# home_tabs.show()
 	with_sidebar(home_tabs.show)
 
+@ui.page('/health')
+def health():
+    return "OK"
+
 @ui.page('/events')
 def events_page():
 	ui.page_title('FollowUp/Events')
