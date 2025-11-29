@@ -77,6 +77,6 @@ def terminateModules(sqlInstance):
 if __name__ in {"__main__", "__mp_main__"}:
 	#ui.page_title('FollowUp')
 	initModules()
-	ui.run(storage_secret=sharedVariables.STORAGE_SECRET, port=sharedVariables.PORT)
+	ui.run(host="0.0.0.0", storage_secret=sharedVariables.STORAGE_SECRET, port=sharedVariables.PORT)
 	#terminateModules(sqlInstance)
 
