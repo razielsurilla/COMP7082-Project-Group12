@@ -208,7 +208,7 @@ def show(calendar_data: Optional[Any] = None) -> None:
         return ev
 
     # DB HOOK 1: INITIAL LOAD
-    frames = calendar_data.getAllData() if calendar_data is not None else []
+    frames = calendar_data.get_all_data() if calendar_data is not None else []
     events: List[Dict[str, Any]] = [_from_data_frame(f) for f in frames]
 
     ui.add_head_html('<style>html, body, #app { overflow-x: hidden !important; }</style>')
@@ -241,7 +241,7 @@ def show(calendar_data: Optional[Any] = None) -> None:
         """DB HOOK 2: RELOAD LIST from DB after create/update/delete."""
         nonlocal events
         if calendar_data is not None:
-            frames2 = calendar_data.getAllData()
+            frames2 = calendar_data.get_all_data()
             events = [_from_data_frame(f) for f in frames2]
 
     def refresh():
@@ -363,7 +363,7 @@ def show(calendar_data: Optional[Any] = None) -> None:
                     except Exception:
                         frame.recurringEndCount = None
 
-                    calendar_data.updateEvent(
+                    calendar_data.update_event(
                         old_start_ts,     # original keys
                         old_end_ts,
                         frame             # new data
@@ -399,7 +399,7 @@ def show(calendar_data: Optional[Any] = None) -> None:
 
             if old_start_ts is not None and old_end_ts is not None:
                 try:
-                    calendar_data.deleteEvent(old_start_ts, old_end_ts)
+                    calendar_data.delete_event(old_start_ts, old_end_ts)
                 except Exception as e:
                     print(f"[EVENTS] deleteEvent error: {e}")
                     ui.notify('Error deleting event from database (events).', color='negative')

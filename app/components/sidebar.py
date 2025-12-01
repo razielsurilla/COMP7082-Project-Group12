@@ -5,7 +5,6 @@ def sidebar():
 							 'transition-all duration-300 hover:w-48 z-100'
 							 ):
 
-		# for now, all links are to the homepage "/"
 		with ui.link(target='/', new_tab=False).classes('no-underline homepage flex'):
 			ui.icon('calendar_month').classes('text-5xl text-gray-700 homepage-hover:text-blue-500')
 			ui.label('Calendar').classes('pl-4 place-content-center text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-500 homepage-hover:text-blue-500')

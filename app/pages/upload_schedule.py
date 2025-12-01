@@ -27,7 +27,7 @@ class UploadSchedule:
         sql_db = Sql()
         calendar_data = CalendarData(sql_db)
 
-        calendar_data.buildData()
+        calendar_data.build_data()
 
         for item in all_data:
             df = UploadedEventDataFrame(
@@ -35,7 +35,7 @@ class UploadSchedule:
                 day=item["day_of_the_week"],
                 desc=item["desc"],
             )
-            calendar_data.addData(df)
+            calendar_data.add_data(df)
 
         sql_db.conn.commit()
         sql_db.terminate()

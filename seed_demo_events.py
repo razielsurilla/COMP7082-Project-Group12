@@ -51,7 +51,7 @@ def seed_demo_events():
     cal = CalendarData(sql_instance)
 
     # build table if needed
-    cal.buildData()
+    cal.build_data()
 
     today = date.today()
 
@@ -109,7 +109,7 @@ def seed_demo_events():
     demo_events = [e1, e2, e3, e4, e5]
 
     for ev in demo_events:
-        cal.addData(ev)
+        cal.add_data(ev)
 
     sql_instance.commit()
     sql_instance.terminate()

@@ -134,7 +134,7 @@ def build_upcoming_events(calendar_data: Optional[Any] = None) -> None:
 
     use_db = calendar_data is not None
 
-    frames = calendar_data.getAllData() if use_db else []
+    frames = calendar_data.get_all_data() if use_db else []
     events: List[Dict[str, Any]] = [_from_data_frame(f) for f in frames]
 
     # Always keep DB events sorted by start timestamp

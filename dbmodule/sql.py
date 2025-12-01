@@ -9,8 +9,8 @@ class Sql:
 	def __init__(self):
 		# ensure directory exists
 		os.makedirs(DATABASE_PATH, exist_ok=True)
-		relPath = os.path.abspath(DATABASE_PATH+DATABASE_FILE)
-		self.conn = sql.connect(relPath)
+		rel_path = os.path.abspath(DATABASE_PATH+DATABASE_FILE)
+		self.conn = sql.connect(rel_path)
 		self.cursor = self.conn.cursor()
 
 	def terminate(self):
@@ -27,7 +27,7 @@ class Sql:
 	def fetchall(self):
 		return self.cursor.fetchall()
 		
-	def rowCount(self):
+	def row_count(self):
 		return self.cursor.rowcount
 		
 	

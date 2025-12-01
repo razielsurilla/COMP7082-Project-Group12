@@ -12,7 +12,7 @@ def with_sidebar(page_content):
 			page_content()
 
 
-def with_justSidebar(page_content):
+def with_just_sidebar(page_content):
 	with ui.row().classes('w-full h-screen'):
 		sidebar()
 		# main content

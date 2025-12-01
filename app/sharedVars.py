@@ -9,7 +9,7 @@ class SharedVars:
 		self.STORAGE_SECRET = 'followupPortal'
 		self.ADDEDIT_DATA_KEY = 'addEditData'
 		self.DATA_DEFAULT_VALUE = 'No data'
-		return None
+
 
 @dataclass
 class AddEditEventData:
@@ -32,12 +32,12 @@ class EventDateTime:
 	dateStr: str = ""
 	timeStr: str = ""
 	
-	def getDateTimestamp(self):
-		dateObj = datetime.now()
+	def get_date_timestamp(self):
+		date_obj = datetime.now()
 		try:
-			dateObj = datetime.strptime(f"{self.dateStr}/{self.timeStr}", self.DATE_FORMAT)
-			return dateObj.timestamp()
-		except ValueError as e:
+			date_obj = datetime.strptime(f"{self.dateStr}/{self.timeStr}", self.DATE_FORMAT)
+			return date_obj.timestamp()
+		except ValueError:
 			print("event date incorrect format!")
 		return 0
 	

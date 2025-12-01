@@ -6,7 +6,7 @@ from nicegui import ui
 
 from .reminder_event import ReminderComponent
 from .recurring_event import RecurringComponent
-from .addedit import datePickerLabel, timePickerLabel
+from .addedit import date_picker_label, time_picker_label
 
 
 _TIME_FORMATS = ['%H:%M', '%H:%M:%S', '%I:%M %p', '%I %p', '%I:%M%p', '%I%p']
@@ -132,12 +132,12 @@ def open_edit_dialog(
                 "grid-cols-1 md:grid-cols-2 gap-2 w-full max-w-[460px]"
             ):
                 # Row 1
-                start_date_inp = datePickerLabel('Start Date', None, start_date_val)
-                end_date_inp = datePickerLabel('End Date', None, end_date_val)
+                start_date_inp = date_picker_label('Start Date', None, start_date_val)
+                end_date_inp = date_picker_label('End Date', None, end_date_val)
 
                 # Row 2
-                start_inp = timePickerLabel('Start Time', None, start_val)
-                end_inp = timePickerLabel('End Time', None, end_val)
+                start_inp = time_picker_label('Start Time', None, start_val)
+                end_inp = time_picker_label('End Time', None, end_val)
 
             desc_inp = ui.textarea(
                 label='Description',

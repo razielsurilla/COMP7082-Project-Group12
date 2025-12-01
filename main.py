@@ -1,25 +1,20 @@
 from nicegui import app, ui
 from app.sharedVars import SharedVars
-from app.layout import with_sidebar, with_justSidebar
+from app.layout import with_sidebar, with_just_sidebar
 from app.pages import home, upload_schedule, add_edit, events, chat_assistant
 from dbmodule.sql import Sql
 from dbmodule.calendardata import CalendarData
-from datetime import datetime
-
 sqlInstance = None
 
 @ui.page('/')
 def home_page():
 	ui.page_title('FollowUp/Calendar')
-	# calendar_ui = home.Calendar()
-	# with_sidebar(calendar_ui.show)
 	home_tabs = home.HomeTabs(calendar_data=calendarData)
-	# home_tabs.show()
 	with_sidebar(home_tabs.show)
 
 @ui.page('/health')
 def health():
-    return "OK"
+	return "OK"
 
 @ui.page('/events')
 def events_page():
@@ -36,9 +31,8 @@ def upload_page():
 def add_edit_page():
 	ui.page_title('FollowUp/Add Events')
 	data = app.storage.user.get(sharedVariables.ADDEDIT_DATA_KEY, sharedVariables.DATA_DEFAULT_VALUE)
-	addEditEvent = add_edit.AddEditEvent(data, calendarData)
-	with_justSidebar(addEditEvent.showPage)
-	#with_sidebar(None)
+	add_edit_event = add_edit.AddEditEvent(data, calendarData)
+	with_just_sidebar(add_edit_event.showPage)
 
 @ui.page('/assistant')
 def assistant_page():
@@ -56,27 +50,20 @@ def initModules():
 	sqlInstance = Sql()
 	calendarData = CalendarData(sqlInstance)
 	
-	calendarData.buildData()
-	calendarData.verifyData()
-	calendarData.printAllData()
-	dataFrames = calendarData.getAllData()
-	
-	#dateRangeMin = datetime(year=2025, month=1, day=25, hour=10, minute=30, second=0)
-	#dateRangeMax = datetime(year=2026, month=1, day=25, hour=10, minute=30, second=0)
-	#calendarData.findEventsInRangeMainCal(dateRangeMin.timestamp(), dateRangeMax.timestamp())
+	calendarData.build_data()
+	calendarData.verify_data()
+	calendarData.print_all_data()
+
 	return None
 
 
-def terminateModules(sqlInstance):
+def terminateModules(sql_instance):
 	print("Gracefully close database connection.")
 	try:
-		sqlInstance.terminate()
+		sql_instance.terminate()
 	except Exception:
 		pass
 
 if __name__ in {"__main__", "__mp_main__"}:
-	#ui.page_title('FollowUp')
 	initModules()
 	ui.run(host="0.0.0.0", storage_secret=sharedVariables.STORAGE_SECRET, port=sharedVariables.PORT)
-	#terminateModules(sqlInstance)
-

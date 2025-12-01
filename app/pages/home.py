@@ -30,7 +30,7 @@ class Calendar:
         start_day_unix = int(datetime.combine(start_day, datetime.min.time()).timestamp())
         last_day_unix = int(datetime.combine(last_day, datetime.max.time()).timestamp())
 
-        self.month_event_data = self.calendar_data.findEventsInRangeMainCal(start_day_unix, last_day_unix)
+        self.month_event_data = self.calendar_data.find_events_in_range_main_cal(start_day_unix, last_day_unix)
 
         # 6 weeks displayed, so 42 days
         return [start_day + timedelta(days=i) for i in range(42)]
@@ -43,7 +43,6 @@ class Calendar:
             with ui.grid(columns=7).classes('gap-x-4 gap-y-2 justify-center'):
                 for weekday in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']:
                     ui.label(weekday).classes('text-md font-bold text-center')
-                #TODO: Make Buttons
                 for index, day in enumerate(days):
                     is_current = day.month == self.state["month"]
                     is_today = day == self.today
@@ -66,41 +65,38 @@ class Calendar:
 
                             with ui.column().classes('overflow-y-auto h-90 w-full my-2 gap-2'):
                                 if day_events := self.month_event_data.get(index):
-                                    for e in day_events:
-                                        print(e)
+                                    for event in day_events:
                                         with ui.card().classes('w-60 h-20 p-2 flex justify-between min-w-0'):
                                             #LS
                                             with ui.element('div').classes('flex flex-col shrink overflow-hidden min-w-0'):
-                                                ui.label(f"{e[0]}").classes('text-ellipsis whitespace-nowrap overflow-hidden min-w-0 max-w-40 mb-5')
-                                                if e[4]:  #If is a recurring event
-                                                    s = ""
-                                                    match e[6]: #check type of recurrence
+                                                ui.label(f"{event[0]}").classes('text-ellipsis whitespace-nowrap overflow-hidden min-w-0 max-w-40 mb-5')
+                                                if event[4]:  #If is a recurring event
+                                                    string = ""
+                                                    match event[6]: #check type of recurrence
                                                         case 1:
-                                                            s = f"Every {e[8]} Days" if e[8] > 1 else "Daily"
+                                                            string = f"Every {event[8]} Days" if event[8] > 1 else "Daily"
                                                         case 2:
-                                                            s = f"Every {e[8]} Weeks" if e[8] > 1 else "Weekly"
+                                                            string = f"Every {event[8]} Weeks" if event[8] > 1 else "Weekly"
                                                         case 3:
-                                                            s = f"Every {e[8]} Months" if e[8] > 1 else "Monthly"
+                                                            string = f"Every {event[8]} Months" if event[8] > 1 else "Monthly"
                                                         case 4:
-                                                            s = f"Every {e[8]} Years" if e[8] > 1 else "Yearly"
+                                                            string = f"Every {event[8]} Years" if event[8] > 1 else "Yearly"
                                                     with ui.element('div').classes('flex'):
                                                         ui.icon('cached').classes('pt-1 pr-1')
-                                                        ui.label(f"{s}")
+                                                        ui.label(f"{string}")
 
                                             with ui.element('div').classes('h-full block ml-auto justify-right items-end text-right'):
-                                                ui.label(f"{datetime.fromtimestamp(e[1]).strftime('%H:%M')}")
-                                                if e[2] > 0:  #If event has end time
-                                                    ui.label("to")
-                                                    ui.label(f"{datetime.fromtimestamp(e[2]).strftime('%H:%M')}")
+                                                ui.label(f"{datetime.fromtimestamp(event[1]).strftime('%H:%M')}")
+                                                ui.label("to")
+                                                ui.label(f"{datetime.fromtimestamp(event[2]).strftime('%H:%M')}")
 
                         dialog.open()
 
                     # card is one day cell
-                    #TODO: Make Clickable to pop up modal
                     with ui.card().classes(f'w-24 h-24 block p-2 {bg}').on('click', show_day_modal):
-                        weekend = 'text-red' if (day.weekday() == 5 or day.weekday() == 6) else 'text-black'
+                        weekend = 'text-red' if (day.weekday() == 5 or day.weekday() == 6) else 'text-black' #Sun/Sat Red
                         ui.label(str(day.day)).classes(f'{weekend}')
-                        if day_events := self.month_event_data.get(index):
+                        if day_events := self.month_event_data.get(index): #get names of evenrs
                             with ui.element('div').classes('flex flex-nowrap items-center overflow-hidden'):
                                 ui.icon('circle').classes('text-blue-500 text-xs pr-1')
                                 ui.label(f"{day_events[0][0]}").classes("overflow-hidden whitespace-nowrap text-ellipsis min-w-0")
@@ -119,8 +115,6 @@ class Calendar:
             self.state["year"] -= 1
         else:
             self.state["month"] -= 1
-        # self.calendar_label.set_text(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}')
-        # self.render_calendar()  # redraw for prev month
         self.update_state(self.state["month"], self.state["year"])
 
     def next_month(self):
@@ -130,8 +124,6 @@ class Calendar:
             self.state["year"] += 1
         else:
             self.state["month"] += 1
-        # self.calendar_label.set_text(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}')
-        # self.render_calendar()  # redraw for next month
         self.update_state(self.state["month"], self.state["year"])
 
     def update_state(self, month, year):
@@ -151,10 +143,7 @@ class Calendar:
 
         # this is so everything is centered
         with ui.column().classes('justify-center items-center w-full'):
-            # month label on top
-            #self.calendar_label = ui.label(f'{calendar.month_name[self.state["month"]]} {self.state["year"]}') \
-            #					 .classes('text-3xl font-bold mb-4 justify-center text-center')
-            # TODO: Make these dropdown menus with on_change events (set state, set text, render_calendar)
+            #dropdowns with month and year
             with ui.row():
                 def on_month_change(e):
                     month_index = months.index(e.value) + 1
@@ -175,9 +164,6 @@ class Calendar:
                     value=str(self.state["year"]),
                     on_change=on_year_change
                 )
-
-            # Implement Later, not important for now
-            # ui.button("Today", on_click=lambda: self.update_state(self.today.month, self.today.year))
 
             # row here, so the arrows are on the same row as the calendar
             with ui.row().classes('items-center justify-center gap-4'):
@@ -206,7 +192,7 @@ class Dates:
         start_day_unix = int(datetime.combine(first_day, datetime.min.time()).timestamp())
         last_day_unix = int(datetime.combine(last_day, datetime.max.time()).timestamp())
 
-        return self.calendar_data.findEventsInRangeImpDate(start_day_unix, last_day_unix, self.num_of_days)
+        return self.calendar_data.find_events_in_range_imp_date(start_day_unix, last_day_unix, self.num_of_days)
 
     def show(self):
         ui.label("Important Dates").classes('w-full text-center text-2xl mt-4 font-bold')
@@ -217,57 +203,39 @@ class Dates:
                     for item in self.dict:
                         with ui.card().classes('shrink-0 p-4 shadow-md inline-block bg-gray-300').style("width: calc(100vw / 4.5); height: 600px;"):
                             ui.label(f"{self.month_abr} {int(item) + 1}").classes('w-full text-center font-bold text-xl mb-4')
-                            max = 5
+                            max_events = 5
                             counter = 0
-                            for e in self.dict[item]:
-                                if counter < max:
+                            for event in self.dict[item]:
+                                if counter < max_events:
                                     with ui.card().classes('w-full h-20 p-2 flex justify-between mb-2'):
                                         # LS
                                         with ui.element('div').classes('flex flex-col shrink overflow-hidden min-w-0'):
-                                            ui.label(f"{e[0]}").classes(
+                                            ui.label(f"{event[0]}").classes(
                                                 'text-ellipsis whitespace-nowrap overflow-hidden min-w-0 max-w-40 mb-5')
-                                            if e[4]:  # If is a recurring event
-                                                s = ""
-                                                match e[6]:  # check type of recurrence
+                                            if event[4]:  # If is a recurring event
+                                                string = ""
+                                                match event[6]:  # check type of recurrence
                                                     case 1:
-                                                        s = f"Every {e[8]} Days" if e[8] > 1 else "Daily"
+                                                        string = f"Every {event[8]} Days" if event[8] > 1 else "Daily"
                                                     case 2:
-                                                        s = f"Every {e[8]} Weeks" if e[8] > 1 else "Weekly"
+                                                        string = f"Every {event[8]} Weeks" if event[8] > 1 else "Weekly"
                                                     case 3:
-                                                        s = f"Every {e[8]} Months" if e[8] > 1 else "Monthly"
+                                                        string = f"Every {event[8]} Months" if event[8] > 1 else "Monthly"
                                                     case 4:
-                                                        s = f"Every {e[8]} Years" if e[8] > 1 else "Yearly"
+                                                        string = f"Every {event[8]} Years" if event[8] > 1 else "Yearly"
                                                 with ui.element('div').classes('flex'):
                                                     ui.icon('cached').classes('pt-1 pr-1')
-                                                    ui.label(f"{s}")
+                                                    ui.label(f"{string}")
 
                                         with ui.element('div').classes(
                                                 'h-full block ml-auto justify-right items-end text-right'):
-                                            ui.label(f"{datetime.fromtimestamp(e[1]).strftime('%H:%M')}")
-                                            if e[2] > 0:  # If event has end time
-                                                ui.label("to")
-                                                ui.label(f"{datetime.fromtimestamp(e[2]).strftime('%H:%M')}")
+                                            ui.label(f"{datetime.fromtimestamp(event[1]).strftime('%H:%M')}")
+                                            ui.label("to")
+                                            ui.label(f"{datetime.fromtimestamp(event[2]).strftime('%H:%M')}")
                                     counter += 1
-                            if len(self.dict[item]) > max:
-                                ui.label(f"+{len(self.dict[item]) - max} More").classes(
+                            if len(self.dict[item]) > max_events:
+                                ui.label(f"+{len(self.dict[item]) - max_events} More").classes(
                                     'w-full text-center text-xl mb-4')
-
-
-                                # for event in self.dict[item]:
-                            #     with ui.card().classes('w-full h-20 p-2 mb-2 flex justify-between'):
-                            #         # LS
-                            #         with ui.element('div').classes('block mr-auto'):
-                            #             ui.label("Event Name").classes('mb-5')
-                            #             if True:  # If is a recurring event
-                            #                 with ui.element('div').classes('flex'):
-                            #                     ui.icon('cached').classes('pt-1 pr-1')
-                            #                     ui.label("Every 2 Days")
-                            #
-                            #         with ui.element('div').classes('block ml-auto justify-right items-end text-right'):
-                            #             ui.label(f"12:00")
-                            #             if True:  # If event has end time
-                            #                 ui.label("to")
-                            #                 ui.label(f"1:00")
 
 
 class HomeTabs:

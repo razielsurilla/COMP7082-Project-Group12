@@ -1,5 +1,5 @@
 from nicegui import ui
-from app.components.addedit import datePickerLabel, timePickerLabel
+from app.components.addedit import date_picker_label, time_picker_label
 from dataclasses import dataclass, field
 from datetime import datetime, date, timedelta
 from typing import ClassVar, List
@@ -83,14 +83,14 @@ class AddEditEvent:
 				ui.notify('Event data incorrect!')
 			else:
 				ui.notify('Event data saved!')
-				self.pageData.eventStartDate = self.eventStartData.getDateTimestamp()
-				self.pageData.eventEndDate = self.eventEndData.getDateTimestamp()
+				self.pageData.eventStartDate = self.eventStartData.get_date_timestamp()
+				self.pageData.eventEndDate = self.eventEndData.get_date_timestamp()
 				if self.isCountSelected == True:
 					self.pageData.recurringEndDate = None
 				else:
-					self.pageData.recurringEndDate = self.recurringEndData.getDateTimestamp()
+					self.pageData.recurringEndDate = self.recurringEndData.get_date_timestamp()
 				print(self.pageData)
-				self.calendarData.addData(self.pageData)
+				self.calendarData.add_data(self.pageData)
 		
 		with ui.column().classes("justify-center items-center h-screen w-full pl-[8rem] gap-8"):
 			ui.label(self.currentDate)
@@ -205,9 +205,9 @@ class AddEditEvent:
 					self.recurringInterval = ui.number(label="Number", on_change=onRecurringIntervalChange, validation=self.validateRecurringInterval, min=0, step=1, precision=0).bind_visibility_from(self.recurringToggle, 'value').style('margin-top: -35px;').without_auto_validation()
 					recurringOptions = ui.radio(radio_list, value=defaultIndex, on_change=onRadioChange).bind_visibility_from(self.recurringToggle, 'value').style('margin-top: -10px;')
 		self.recurringCountToggle = ui.toggle({1: 'End At Time', 2: 'End At Count'}, value=1, on_change=onRecurringCountToggleChange).bind_visibility_from(self.recurringToggle, 'value')
-		self.recurringEndDate = datePickerLabel("Recurring End Date", onEndDateSelect).without_auto_validation()
+		self.recurringEndDate = date_picker_label("Recurring End Date", onEndDateSelect).without_auto_validation()
 		self.recurringEndDate.bind_visibility_from(self.recurringToggle, 'value')
-		self.recurringEndTime = timePickerLabel("Recurring End Time", onEndTimeSelect).without_auto_validation()
+		self.recurringEndTime = time_picker_label("Recurring End Time", onEndTimeSelect).without_auto_validation()
 		self.recurringEndTime.bind_visibility_from(self.recurringToggle, 'value')
 		with ui.row().style('margin-top: 20px;'):
 			repeatLabel = ui.label('I want this event to repeat every:').bind_visibility_from(self.recurringToggle, 'value')
@@ -239,11 +239,11 @@ class AddEditEvent:
 		
 		self.eventName = ui.input(label='Event Name', on_change=onEventNameChange, validation=self.validateName).without_auto_validation()
 		with ui.row():
-			self.eventStartDate = datePickerLabel("Start Date", onStartDateSelect).without_auto_validation()
-			self.eventStartTime = timePickerLabel("Start Time", onStartTimeSelect).without_auto_validation()
+			self.eventStartDate = date_picker_label("Start Date", onStartDateSelect).without_auto_validation()
+			self.eventStartTime = time_picker_label("Start Time", onStartTimeSelect).without_auto_validation()
 		with ui.row():
-			self.eventEndDate = datePickerLabel("End Date", onEndDateSelect).without_auto_validation()
-			self.eventEndTime = timePickerLabel("End Time", onEndTimeSelect).without_auto_validation()
+			self.eventEndDate = date_picker_label("End Date", onEndDateSelect).without_auto_validation()
+			self.eventEndTime = time_picker_label("End Time", onEndTimeSelect).without_auto_validation()
 		return None
 	
 	def validateName(self, value):
