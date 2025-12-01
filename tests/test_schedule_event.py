@@ -1,4 +1,3 @@
-import pytest
 from app.components.schedule_event import ScheduleEvent
 
 class DummyInput:

@@ -1,4 +1,3 @@
-import pytest
 from app.components.edit_event import (
     _parse_time_to_minutes,
     _minutes_to_12h_str,
