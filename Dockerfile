@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all project files
 COPY . .
 
-# NiceGUI runs uvicorn internally, but we expose 8080 for Fly.io
+# NiceGUI runs uvicorn internally, but we expose 9090 for Fly.io
 EXPOSE 9090
 
 ENV PYTHONUNBUFFERED=1
